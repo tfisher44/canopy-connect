@@ -37,6 +37,7 @@ export function MapPlaceholder() {
         import("@arcgis/map-components/components/arcgis-fullscreen/customElement"),
         import("@arcgis/map-components/components/arcgis-zoom/customElement"),
         import("@arcgis/map-components/components/arcgis-search/customElement"),
+        import("@arcgis/map-components/components/arcgis-locate/customElement"),
       ]);
 
       if (isMounted) {
@@ -124,6 +125,7 @@ export function MapPlaceholder() {
           autoDestroyDisabled={true}
         >
           <arcgis-search slot="top-left" />
+          <arcgis-locate slot="top-left" />
           <arcgis-layer-list slot="bottom-left" />
           <arcgis-fullscreen slot="top-right" />
           <arcgis-zoom slot="top-right" />
@@ -134,3 +136,4 @@ export function MapPlaceholder() {
     </section>
   );
 }
+
