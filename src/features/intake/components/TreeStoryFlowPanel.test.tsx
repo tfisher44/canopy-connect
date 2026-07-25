@@ -1,9 +1,18 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach } from "vitest";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
+import { useState } from "react";
+import { describe, expect, it, vi } from "vitest";
 import { MapProvider, useMapRuntime } from "../../../map/context/MapContext";
 import { TreeStoryFlowPanel } from "./TreeStoryFlowPanel";
+
+const { createTreeMock } = vi.hoisted(() => ({
+  createTreeMock: vi.fn(),
+}));
+
+vi.mock("../services/treeService", () => ({
+  createTree: createTreeMock,
+}));
 
 afterEach(() => {
   cleanup();
@@ -15,6 +24,7 @@ describe("TreeStoryFlowPanel", () => {
     const draftLocationLabel = runtime.draftTreeLocation
       ? `${runtime.draftTreeLocation.latitude}, ${runtime.draftTreeLocation.longitude}`
       : "none";
+    const selectedTreeLabel = runtime.selectedTreeId ?? "none";
     return (
       <section>
         <p data-testid="point-selection-mode">
@@ -24,12 +34,25 @@ describe("TreeStoryFlowPanel", () => {
           {runtime.newTreePlacementEnabled ? "on" : "off"}
         </p>
         <p data-testid="draft-location">{draftLocationLabel}</p>
+        <p data-testid="selected-tree">{selectedTreeLabel}</p>
         <button
           type="button"
           onClick={() => runtime.setDraftTreeLocation({ latitude: 35.123456, longitude: -120.654321 })}
         >
           Set draft location
         </button>
+      </section>
+    );
+  }
+
+  function PanelMountHarness() {
+    const [mounted, setMounted] = useState(true);
+    return (
+      <section>
+        <button type="button" onClick={() => setMounted((current) => !current)}>
+          Toggle panel mount
+        </button>
+        {mounted ? <TreeStoryFlowPanel /> : null}
       </section>
     );
   }
@@ -97,8 +120,14 @@ describe("TreeStoryFlowPanel", () => {
     expect(screen.getByTestId("point-selection-mode")).toHaveTextContent("on");
   });
 
-  it("persists selected location when continuing to add tree form", async () => {
+  it("collects tree details first, then creates a new tree and redirects to the story form", async () => {
     const user = userEvent.setup();
+    createTreeMock.mockResolvedValue({
+      id: "12345",
+      latitude: 35.123456,
+      longitude: -120.654321,
+      isAlive: true,
+    });
     renderWithProviders();
 
     await user.click(screen.getByRole("button", { name: "Add new tree and story" }));
@@ -106,15 +135,48 @@ describe("TreeStoryFlowPanel", () => {
 
     expect(screen.getByRole("button", { name: "Continue to add tree" })).toBeEnabled();
     await user.click(screen.getByRole("button", { name: "Continue to add tree" }));
-
     expect(screen.getByRole("heading", { name: "Add tree" })).toBeInTheDocument();
-    expect(screen.getByTestId("new-tree-placement-mode")).toHaveTextContent("on");
+    await user.click(screen.getByRole("button", { name: "Add tree" }));
+
+    expect(createTreeMock).toHaveBeenCalledWith({
+      latitude: 35.123456,
+      longitude: -120.654321,
+      isAlive: true,
+      imageFile: undefined,
+    });
+    expect(screen.getByRole("heading", { name: "Add your tree story" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Story title")).toBeInTheDocument();
     expect(
-      screen.getByText(
-        "Add an optional tree image and choose alive/dead status. You can still click the map to move the pin.",
-      ),
-    ).toBeInTheDocument();
-    expect(screen.getAllByText("35.123456, -120.654321").length).toBeGreaterThan(0);
-    expect(screen.getByTestId("draft-location")).toHaveTextContent("35.123456, -120.654321");
+      screen.queryByText("No selected tree found. Go back and select or create a tree first."),
+    ).not.toBeInTheDocument();
+    expect(screen.getByTestId("new-tree-placement-mode")).toHaveTextContent("off");
+  });
+
+  it("clears selected tree and draft marker state when panel unmounts", async () => {
+    const user = userEvent.setup();
+    createTreeMock.mockResolvedValue({
+      id: "12345",
+      latitude: 35.123456,
+      longitude: -120.654321,
+      isAlive: true,
+    });
+    render(
+      <MapProvider>
+        <RuntimeProbe />
+        <PanelMountHarness />
+      </MapProvider>,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Add new tree and story" }));
+    await user.click(screen.getByRole("button", { name: "Set draft location" }));
+    await user.click(screen.getByRole("button", { name: "Continue to add tree" }));
+    await user.click(screen.getByRole("button", { name: "Add tree" }));
+    expect(screen.getByTestId("selected-tree")).not.toHaveTextContent("none");
+
+    await user.click(screen.getByRole("button", { name: "Toggle panel mount" }));
+    expect(screen.getByTestId("new-tree-placement-mode")).toHaveTextContent("off");
+    expect(screen.getByTestId("draft-location")).toHaveTextContent("none");
+    expect(screen.getByTestId("selected-tree")).toHaveTextContent("none");
+    expect(screen.getByTestId("point-selection-mode")).toHaveTextContent("off");
   });
 });

@@ -2,8 +2,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AddTreeForm } from "../../../components/add-tree-form";
 import { AddStoryForm } from "../../../components/add-story-form";
 import type { AddStoryFormValues, AddTreeFormValues } from "../schema";
-import { createTree } from "../services/treeService";
 import { createStory } from "../services/storyService";
+import { createTree } from "../services/treeService";
 import type { LocationSearchResult } from "../../../map/context/MapContext";
 import { useMapRuntime } from "../../../map/context/MapContext";
 
@@ -64,6 +64,15 @@ export function TreeStoryFlowPanel() {
   const [storySubmitting, setStorySubmitting] = useState(false);
   const [submittedStoryId, setSubmittedStoryId] = useState<string | null>(null);
   const headingRef = useRef<HTMLHeadingElement | null>(null);
+
+  const clearTreeStoryRuntimeState = () => {
+    setTreeSelectionEnabled(false);
+    setTreeSelectionMessage(null);
+    setSelectedTreeId(null);
+    setDraftTreeLocation(null);
+    setNewTreePlacementEnabled(false);
+    setNewTreePlacementMessage(null);
+  };
 
   const handleLocationQueryChange = (value: string) => {
     setLocationQuery(value);
@@ -138,12 +147,7 @@ export function TreeStoryFlowPanel() {
     setTreeSubmitError(null);
     setStorySubmitError(null);
     setSubmittedStoryId(null);
-    setTreeSelectionEnabled(false);
-    setTreeSelectionMessage(null);
-    setSelectedTreeId(null);
-    setDraftTreeLocation(null);
-    setNewTreePlacementEnabled(false);
-    setNewTreePlacementMessage(null);
+    clearTreeStoryRuntimeState();
   };
 
   const goBack = () => {
@@ -216,15 +220,14 @@ export function TreeStoryFlowPanel() {
   }, [setTreeSelectionEnabled, step]);
 
   useEffect(() => {
-    setNewTreePlacementEnabled(
-      step === "new-tree-location" || step === "new-tree-form",
-    );
+    setNewTreePlacementEnabled(step === "new-tree-location" || step === "new-tree-form");
   }, [setNewTreePlacementEnabled, step]);
 
   useEffect(() => {
     setPointSelectionVisibilityModeEnabled(true);
     return () => {
       setPointSelectionVisibilityModeEnabled(false);
+      clearTreeStoryRuntimeState();
     };
     // Keep imagery-only mode scoped to panel mount lifecycle.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -361,6 +364,11 @@ export function TreeStoryFlowPanel() {
           {newTreePlacementMessage ? (
             <p className="muted" role="status" aria-live="polite">
               {newTreePlacementMessage}
+            </p>
+          ) : null}
+          {treeSubmitError ? (
+            <p className="error" role="alert">
+              {treeSubmitError}
             </p>
           ) : null}
           <div className="tree-story-flow__actions">

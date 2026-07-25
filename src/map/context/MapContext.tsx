@@ -146,14 +146,16 @@ function mapRuntimeReducer(state: MapRuntimeState, action: MapRuntimeAction): Ma
     case "SET_TREE_SELECTION_ENABLED":
       if (
         state.treeSelectionEnabled === action.payload &&
-        (action.payload || (state.selectedTreeId === null && state.treeSelectionMessage === null))
+        state.treeSelectionMessage ===
+          (action.payload
+            ? "Click a story-eligible tree on the map to continue."
+            : null)
       ) {
         return state;
       }
       return {
         ...state,
         treeSelectionEnabled: action.payload,
-        selectedTreeId: action.payload ? state.selectedTreeId : null,
         treeSelectionMessage: action.payload
           ? "Click a story-eligible tree on the map to continue."
           : null,

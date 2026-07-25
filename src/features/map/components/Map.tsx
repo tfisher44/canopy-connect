@@ -67,8 +67,13 @@ function getErrorMessage(cause: unknown): string {
 const STORY_ELIGIBLE_TREE_LAYER_ID = "story-eligible-trees";
 const TREE_STORY_OVERLAY_LAYER_ID = "tree-story-workflow-overlay";
 const IMAGERY_KEYWORDS = ["imagery", "satellite", "aerial", "ortho"];
+const DRAFT_TREE_ID_PREFIX = "draft-tree-";
 const DRAFT_TREE_MARKER_ICON_URL =
   "https://img.icons8.com/isometric/100/deciduous-tree.png";
+
+function isDraftTreeId(treeId: string): boolean {
+  return treeId.startsWith(DRAFT_TREE_ID_PREFIX);
+}
 
 function getBasemapLayers(mapView: MapView): LayerWithVisibility[] {
   const baseLayers = mapView.map?.basemap?.baseLayers?.toArray() ?? [];
@@ -248,6 +253,7 @@ export function MapPlaceholder() {
   const {
     error,
     mapView,
+    selectedTreeId,
     treeSelectionEnabled,
     newTreePlacementEnabled,
     pointSelectionVisibilityModeEnabled,
@@ -319,7 +325,8 @@ export function MapPlaceholder() {
     }
 
     bindSearchToMap(mapElement, searchElementRef.current);
-    configureLayerListLegendPanels(layerListElementRef.current);
+    const layerListElement = layerListElementRef.current;
+    configureLayerListLegendPanels(layerListElement);
     const searchElement = searchElementRef.current;
 
     let isMounted = true;
@@ -376,13 +383,13 @@ export function MapPlaceholder() {
       if (!isMounted) {
         return;
       }
-      configureLayerListLegendPanels(layerListElementRef.current);
+      configureLayerListLegendPanels(layerListElement);
     };
 
     mapElement.addEventListener("arcgisViewReadyChange", handleViewReady);
     mapElement.addEventListener("arcgisLoadError", handleLoadError);
     searchElement?.addEventListener("arcgisReady", handleSearchReady);
-    layerListElementRef.current?.addEventListener(
+    layerListElement?.addEventListener(
       "arcgisReady",
       handleLayerListReady,
     );
@@ -392,7 +399,7 @@ export function MapPlaceholder() {
       mapElement.removeEventListener("arcgisViewReadyChange", handleViewReady);
       mapElement.removeEventListener("arcgisLoadError", handleLoadError);
       searchElement?.removeEventListener("arcgisReady", handleSearchReady);
-      layerListElementRef.current?.removeEventListener(
+      layerListElement?.removeEventListener(
         "arcgisReady",
         handleLayerListReady,
       );
@@ -525,6 +532,10 @@ export function MapPlaceholder() {
     const map = mapView.map;
     let isDisposed = false;
     let overlayLayer: GraphicsLayer | null = null;
+    const showDraftTreeMarker =
+      draftTreeLocation !== null &&
+      (newTreePlacementEnabled ||
+        (typeof selectedTreeId === "string" && isDraftTreeId(selectedTreeId)));
 
     const drawOverlay = async () => {
       const [{ default: GraphicClass }, { default: GraphicsLayerClass }] =
@@ -549,7 +560,7 @@ export function MapPlaceholder() {
 
       overlayLayer.removeAll();
 
-      for (const tree of createdTrees) {
+      for (const tree of createdTrees.filter((candidate) => !isDraftTreeId(candidate.id))) {
         overlayLayer.add(
           new GraphicClass({
             geometry: {
@@ -574,7 +585,7 @@ export function MapPlaceholder() {
         );
       }
 
-      if (draftTreeLocation) {
+      if (showDraftTreeMarker && draftTreeLocation) {
         overlayLayer.add(
           new GraphicClass({
             geometry: {
@@ -599,7 +610,13 @@ export function MapPlaceholder() {
     return () => {
       isDisposed = true;
     };
-  }, [createdTrees, draftTreeLocation, mapView]);
+  }, [
+    createdTrees,
+    draftTreeLocation,
+    mapView,
+    newTreePlacementEnabled,
+    selectedTreeId,
+  ]);
 
   return (
     <section className="map-placeholder" aria-label="Map viewport">
