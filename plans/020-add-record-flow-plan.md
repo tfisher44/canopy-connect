@@ -1,0 +1,117 @@
+# Plan: Add-Record Workflow Increment
+
+**Generated**: 2026-07-24  
+**Estimated Complexity**: Medium
+
+## Overview
+Implement the end-to-end add-record workflow for one point layer: enter add mode, place a point, fill dynamic required attributes, submit via `applyEdits`, and show outcome.
+
+## Prerequisites
+- Increment `010-foundation-map-runtime-plan.md` completed
+- Runtime schema discovery available
+- Editable point layer resolvable with create capability
+
+## Sprint 1: Add-Flow Orchestration
+**Goal**: Introduce deterministic add-flow state behavior.
+**Demo/Validation**:
+- State transitions work for start, cancel, submit, success, and error paths
+
+### Task 1.1: Create add-flow state machine
+- **Location**:
+  - `src/features/editing/model/addRecordState.ts`
+  - `src/features/editing/model/useAddRecordState.ts`
+- **Description**: Define transitions `idle -> placingGeometry -> fillingAttributes -> submitting -> success|error|cancelled`.
+- **Dependencies**: Increment 010 complete
+- **Acceptance Criteria**:
+  - Invalid transitions are blocked
+  - Cancel always returns to idle
+- **Validation**:
+  - Unit tests for transition rules
+
+### Task 1.2: Build add-flow panel scaffolding
+- **Location**:
+  - `src/features/editing/ui/AddRecordPanel.tsx`
+  - `src/features/editing/ui/AddRecordActions.tsx`
+- **Description**: Build UI containers and controls driven by add-flow state.
+- **Dependencies**: Task 1.1
+- **Acceptance Criteria**:
+  - Panel shows correct content per state
+  - Controls disable during submitting
+- **Validation**:
+  - Component tests for rendered states
+
+## Sprint 2: Geometry + Form Capture
+**Goal**: Capture one pending point plus valid attributes.
+**Demo/Validation**:
+- User can click map to place or replace one pending point
+- Form enforces required fields from discovered schema
+
+### Task 2.1: Implement point placement interaction
+- **Location**:
+  - `src/features/editing/map/useGeometryPlacement.ts`
+  - `src/features/editing/map/placementGraphics.ts`
+- **Description**: Wire map click to temporary point placement with cleanup on cancel/unmount.
+- **Dependencies**: Task 1.1
+- **Acceptance Criteria**:
+  - Exactly one pending point exists at any time
+  - Cleanup removes graphics and listeners
+- **Validation**:
+  - Hook tests with mocked MapView events
+  - Manual interaction test in browser
+
+### Task 2.2: Build dynamic attribute form
+- **Location**:
+  - `src/features/editing/forms/AddRecordForm.tsx`
+  - `src/features/editing/forms/addRecordSchema.ts`
+  - `src/features/editing/forms/mapLayerFieldAdapters.ts`
+- **Description**: Use runtime schema model to build and validate the form with `react-hook-form` + `zod`.
+- **Dependencies**: Task 1.2, Task 2.1, Increment 010 Task 3.1
+- **Acceptance Criteria**:
+  - Required fields enforced from discovered schema
+  - Field-to-attribute mapping is deterministic and typed
+- **Validation**:
+  - Form validation tests for valid/invalid input
+
+## Sprint 3: Persist via applyEdits
+**Goal**: Submit feature payload and surface result.
+**Demo/Validation**:
+- Successful submit returns feature ID and visible success message
+- Failed submit shows actionable error details
+
+### Task 3.1: Implement create feature service
+- **Location**:
+  - `src/features/editing/services/createFeature.ts`
+  - `src/features/editing/types/editPayload.ts`
+- **Description**: Compose `addFeatures` payload and call `FeatureLayer.applyEdits`; handle IDs and service errors.
+- **Dependencies**: Task 2.1, Task 2.2
+- **Acceptance Criteria**:
+  - Payload includes geometry + validated attributes only
+  - Errors are propagated and displayed, not swallowed
+- **Validation**:
+  - Service unit tests for success and failure responses
+
+### Task 3.2: Wire submit orchestration in panel flow
+- **Location**:
+  - `src/features/editing/ui/AddRecordPanel.tsx`
+  - `src/features/editing/model/useAddRecordState.ts`
+- **Description**: Connect form submit to service call and state transitions.
+- **Dependencies**: Task 3.1
+- **Acceptance Criteria**:
+  - Submit transitions through `submitting -> success|error`
+  - Retry and cancel paths recover cleanly
+- **Validation**:
+  - Integration-style component test with service mocks
+
+## Testing Strategy
+- Unit: state machine, payload builder, service errors
+- Component: panel state rendering and form behavior
+- Manual: add point + submit + refresh visibility check
+
+## Potential Risks & Gotchas
+- Required field types may have domains/ranges not captured by generic form controls
+- Rapid user clicks during submit can cause duplicate request races
+
+## Rollback Plan
+- Feature-flag or temporarily remove add-record entry button
+- Keep map runtime intact while reverting editing-specific files
+

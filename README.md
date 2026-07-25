@@ -1,32 +1,32 @@
-# React + TypeScript + Vite
+# Canopy Connect Starter
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Minimal starter scaffold for:
+- React + TypeScript (Vite)
+- React Router
+- React Hook Form + Zod validation
+- Radix UI primitives
+- ArcGIS SDK placeholder integration surface
 
-Currently, two official plugins are available:
+## Routes
+- `/` Home
+- `/form` Story intake form (client-only state)
+- `/map` Minimal map placeholder (reference-only for now)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Scripts
+- `pnpm dev` start local dev server
+- `pnpm build` production build
+- `pnpm preview` preview built app
+- `pnpm typecheck` TypeScript checks
+- `pnpm lint` ESLint checks
+- `pnpm test` run Vitest
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+## Getting started
+```bash
+pnpm install
+pnpm dev
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+## ArcGIS references for next phase
+- https://github.com/Esri/jsapi-resources/tree/main/templates/ai-components-custom-agent-hil-react
+- https://github.com/Esri/jsapi-resources/blob/main/templates/ai-components-custom-agent-hil-react/src/maintenanceAgent.ts#L187-L218
+- https://github.com/omarkawach/esri-conferences/tree/main/UC-2026/programming-patterns-and-best-practices
