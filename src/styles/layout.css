@@ -46,12 +46,58 @@
     radial-gradient(circle at 20% 18%, var(--hero-overlay-a), transparent 45%),
     radial-gradient(circle at 82% 14%, var(--hero-overlay-b), transparent 44%),
     radial-gradient(circle at 52% 88%, var(--hero-overlay-c), transparent 42%),
-    linear-gradient(125deg, rgba(7, 12, 26, 0.96), rgba(8, 18, 38, 0.96)) padding-box,
-    linear-gradient(120deg, var(--border-neon), var(--border-neon-strong)) border-box;
+    radial-gradient(
+      circle at 74% 86%,
+      color-mix(in oklab, var(--brand-core) 12%, transparent),
+      transparent 40%
+    ),
+    radial-gradient(
+      circle at 14% 80%,
+      color-mix(in oklab, var(--brand-spark-pink) 10%, transparent),
+      transparent 32%
+    ),
+    linear-gradient(
+        130deg,
+        color-mix(in oklab, var(--surface-matte) 92%, #050b11),
+        color-mix(in oklab, var(--surface-matte) 82%, #112a1d)
+      )
+      padding-box,
+    linear-gradient(
+        120deg,
+        var(--border-neon),
+        var(--border-neon-strong),
+        var(--brand-spark-gold)
+      )
+      border-box;
   box-shadow:
     0 0.9rem 2rem rgba(0, 0, 0, 0.3),
-    0 0 0.85rem color-mix(in oklab, var(--border-neon) 24%, transparent),
-    0 0 1.1rem color-mix(in oklab, var(--border-neon-strong) 18%, transparent);
+    0 0 0.55rem color-mix(in oklab, var(--border-neon) 18%, transparent),
+    inset 0 0 1rem color-mix(in oklab, var(--brand-spark-gold) 5%, transparent);
+}
+
+.runtime-shell__mascot {
+  position: absolute;
+  right: clamp(0.7rem, 1.2vw, 1.2rem);
+  bottom: clamp(0.8rem, 1.8vh, 1.4rem);
+  z-index: 2;
+  pointer-events: none;
+  opacity: 0.34;
+}
+
+.runtime-shell__mascot-image {
+  display: block;
+  width: clamp(3.2rem, 6.5vw, 5.4rem);
+  height: auto;
+  animation:
+    mascot-bob 4s ease-in-out infinite,
+    mascot-tilt 6.2s ease-in-out infinite;
+  filter: drop-shadow(
+      0 0 0.3rem color-mix(in oklab, var(--brand-core) 16%, transparent)
+    )
+    drop-shadow(
+      0 0 0.25rem
+        color-mix(in oklab, var(--brand-spark-violet) 10%, transparent)
+    );
 }
 
 .runtime-shell__map-controls {
@@ -68,6 +114,7 @@
 .runtime-shell__panel-theme-controls {
   padding: 0.7rem 0.85rem 0.5rem;
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-start;
   align-items: center;
   gap: 0.4rem;
@@ -102,9 +149,45 @@
   font-weight: 700;
   padding: 0.72rem 1.05rem;
   border-color: color-mix(in oklab, var(--border-neon) 78%, transparent);
-  background: color-mix(in oklab, var(--surface-matte) 84%, rgba(8, 18, 36, 0.4));
+  background: color-mix(
+    in oklab,
+    var(--surface-matte) 84%,
+    rgba(8, 18, 36, 0.4)
+  );
   box-shadow:
     0 0.45rem 1.05rem rgba(0, 0, 0, 0.26),
-    0 0 0.8rem color-mix(in oklab, var(--border-neon) 30%, transparent);
+    0 0 0.55rem color-mix(in oklab, var(--border-neon) 20%, transparent);
   backdrop-filter: blur(8px);
+}
+
+@keyframes mascot-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  @keyframes mascot-tilt {
+    0%,
+    100% {
+      rotate: 0deg;
+    }
+
+    40% {
+      rotate: -1.4deg;
+    }
+
+    65% {
+      rotate: 1.2deg;
+    }
+  }
+
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .runtime-shell__mascot-image {
+    animation: none;
+  }
 }

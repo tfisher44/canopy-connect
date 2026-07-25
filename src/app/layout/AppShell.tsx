@@ -45,6 +45,8 @@ export function AppShell({
     <div className={shellClassName}>
       <AppRibbon
         title="Canopy Connect"
+        subtitle="Plant stories, explore your canopy, and celebrate every tree."
+        logoSrc="/brand/canopy-logo.png"
         action={
           <SidebarToggleButton
             open={panelOpen}
@@ -60,6 +62,13 @@ export function AppShell({
           className="runtime-shell__map-region"
           aria-label="Map workspace"
         >
+          <div className="runtime-shell__mascot" aria-hidden="true">
+            <img
+              className="runtime-shell__mascot-image"
+              src="/brand/canopy-mascot.png"
+              alt=""
+            />
+          </div>
           <MapPlaceholder />
         </section>
         {panelOpen ? (

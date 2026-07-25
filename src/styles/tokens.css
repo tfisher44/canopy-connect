@@ -1,42 +1,102 @@
 :root {
-  font-family: Manrope, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family:
+    Manrope,
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif;
   line-height: 1.55;
   font-weight: 400;
-  color: #e9f7ef;
-  --surface-glass: rgba(14, 23, 41, 0.58);
-  --surface-matte: rgba(9, 16, 30, 0.9);
-  --border-neon: rgba(34, 211, 238, 0.44);
-  --border-neon-strong: rgba(168, 85, 247, 0.8);
+  color: #ebf9f0;
+  --surface-glass: rgba(11, 26, 21, 0.58);
+  --surface-matte: rgba(6, 18, 14, 0.9);
+  --border-neon: rgba(112, 183, 78, 0.42);
+  --border-neon-strong: rgba(46, 120, 82, 0.66);
   --border-muted: rgba(148, 163, 184, 0.24);
-  --control-bg-calm: linear-gradient(
-    140deg,
-    color-mix(in oklab, var(--surface-matte) 92%, #050a14),
-    color-mix(in oklab, var(--surface-glass) 84%, #081123)
+  --brand-core: #6db534;
+  --brand-deep: #245f4c;
+  --brand-spark-cyan: #58c6ff;
+  --brand-spark-violet: #8f7bff;
+  --brand-spark-gold: #ffd24d;
+  --brand-spark-pink: #f27bb8;
+  --brand-spark-orange: #ffa24d;
+  --playful-dot-a: color-mix(
+    in oklab,
+    var(--brand-spark-cyan) 26%,
+    transparent
   );
-  --control-border-calm: color-mix(in oklab, var(--border-neon) 44%, var(--border-muted));
-  --control-border-accent: color-mix(in oklab, var(--border-neon-strong) 72%, white 8%);
+  --playful-dot-b: color-mix(
+    in oklab,
+    var(--brand-spark-pink) 22%,
+    transparent
+  );
+  --playful-dot-c: color-mix(
+    in oklab,
+    var(--brand-spark-gold) 20%,
+    transparent
+  );
+  --control-bg-calm: linear-gradient(
+    135deg,
+    color-mix(in oklab, var(--surface-matte) 90%, #050d0a),
+    color-mix(in oklab, var(--surface-glass) 82%, #0f2d1d)
+  );
+  --control-border-calm: color-mix(
+    in oklab,
+    var(--border-neon) 44%,
+    var(--border-muted)
+  );
+  --control-border-accent: color-mix(
+    in oklab,
+    var(--border-neon-strong) 72%,
+    white 8%
+  );
   --shadow-ambient: 0 0.6rem 1.3rem rgba(0, 0, 0, 0.24);
-  --glow-calm: 0 0 0.55rem color-mix(in oklab, var(--border-neon) 22%, transparent);
-  --glow-accent: 0 0 0.95rem color-mix(in oklab, var(--border-neon) 40%, transparent);
-  --glow-accent-strong: 0 0 1.2rem color-mix(in oklab, var(--border-neon-strong) 34%, transparent);
-  --focus-ring-soft: 0 0 0 2px color-mix(in oklab, var(--border-neon) 28%, transparent);
-  --focus-ring-strong: 0 0 0 4px color-mix(in oklab, var(--border-neon-strong) 24%, transparent);
-  --text-primary: #e9f7ef;
-  --text-muted: #9ec7b5;
-  --title-color: #e6ffe6;
-  --subtitle-color: #bfd5f8;
-  --status-color: #d4ecff;
+  --glow-calm: 0 0 0.42rem
+    color-mix(in oklab, var(--border-neon) 14%, transparent);
+  --glow-accent: 0 0 0.65rem
+    color-mix(in oklab, var(--border-neon) 24%, transparent);
+  --glow-accent-strong: 0 0 0.85rem
+    color-mix(in oklab, var(--border-neon-strong) 22%, transparent);
+  --focus-ring-soft: 0 0 0 2px
+    color-mix(in oklab, var(--border-neon) 28%, transparent);
+  --focus-ring-strong: 0 0 0 4px
+    color-mix(in oklab, var(--border-neon-strong) 24%, transparent);
+  --text-primary: #ebf9f0;
+  --text-muted: #9fd2b4;
+  --title-color: #efffea;
+  --subtitle-color: #ceebdc;
+  --status-color: #dff8ec;
   --heading-color: #e8ffee;
-  --hero-overlay-a: rgba(34, 211, 238, 0.14);
-  --hero-overlay-b: rgba(168, 85, 247, 0.14);
-  --hero-overlay-c: rgba(250, 204, 21, 0.1);
+  --hero-overlay-a: rgba(109, 181, 52, 0.16);
+  --hero-overlay-b: rgba(88, 198, 255, 0.14);
+  --hero-overlay-c: rgba(143, 123, 255, 0.1);
   --theme-bg:
-    radial-gradient(circle at 12% 12%, rgba(34, 211, 238, 0.16), transparent 34%),
-    radial-gradient(circle at 84% 16%, rgba(168, 85, 247, 0.14), transparent 32%),
-    radial-gradient(circle at 58% 90%, rgba(251, 191, 36, 0.1), transparent 34%),
-    #060a13;
+    radial-gradient(
+      circle at 12% 12%,
+      rgba(109, 181, 52, 0.2),
+      transparent 34%
+    ),
+    radial-gradient(
+      circle at 84% 16%,
+      rgba(88, 198, 255, 0.14),
+      transparent 33%
+    ),
+    radial-gradient(
+      circle at 30% 78%,
+      rgba(242, 123, 184, 0.08),
+      transparent 30%
+    ),
+    radial-gradient(
+      circle at 58% 90%,
+      rgba(143, 123, 255, 0.1),
+      transparent 34%
+    ),
+    #050d0a;
   --danger: #fb7185;
-  --header-height: 6.4rem;
+  --header-height: 6.35rem;
 }
 
 :root[data-theme="aurora"] {
@@ -54,9 +114,21 @@
   --hero-overlay-b: rgba(168, 85, 247, 0.14);
   --hero-overlay-c: rgba(250, 204, 21, 0.1);
   --theme-bg:
-    radial-gradient(circle at 12% 12%, rgba(34, 211, 238, 0.16), transparent 34%),
-    radial-gradient(circle at 84% 16%, rgba(168, 85, 247, 0.14), transparent 32%),
-    radial-gradient(circle at 58% 90%, rgba(251, 191, 36, 0.1), transparent 34%),
+    radial-gradient(
+      circle at 12% 12%,
+      rgba(34, 211, 238, 0.16),
+      transparent 34%
+    ),
+    radial-gradient(
+      circle at 84% 16%,
+      rgba(168, 85, 247, 0.14),
+      transparent 32%
+    ),
+    radial-gradient(
+      circle at 58% 90%,
+      rgba(251, 191, 36, 0.1),
+      transparent 34%
+    ),
     #060a13;
 }
 
@@ -75,9 +147,21 @@
   --hero-overlay-b: rgba(16, 185, 129, 0.12);
   --hero-overlay-c: rgba(56, 189, 248, 0.1);
   --theme-bg:
-    radial-gradient(circle at 14% 11%, rgba(45, 212, 191, 0.16), transparent 35%),
-    radial-gradient(circle at 82% 18%, rgba(59, 130, 246, 0.14), transparent 34%),
-    radial-gradient(circle at 54% 90%, rgba(16, 185, 129, 0.08), transparent 36%),
+    radial-gradient(
+      circle at 14% 11%,
+      rgba(45, 212, 191, 0.16),
+      transparent 35%
+    ),
+    radial-gradient(
+      circle at 82% 18%,
+      rgba(59, 130, 246, 0.14),
+      transparent 34%
+    ),
+    radial-gradient(
+      circle at 54% 90%,
+      rgba(16, 185, 129, 0.08),
+      transparent 36%
+    ),
     #060f0c;
 }
 
@@ -96,9 +180,21 @@
   --hero-overlay-b: rgba(251, 191, 36, 0.12);
   --hero-overlay-c: rgba(251, 113, 133, 0.1);
   --theme-bg:
-    radial-gradient(circle at 14% 12%, rgba(244, 114, 182, 0.18), transparent 34%),
-    radial-gradient(circle at 82% 14%, rgba(251, 191, 36, 0.14), transparent 34%),
-    radial-gradient(circle at 58% 90%, rgba(251, 113, 133, 0.1), transparent 36%),
+    radial-gradient(
+      circle at 14% 12%,
+      rgba(244, 114, 182, 0.18),
+      transparent 34%
+    ),
+    radial-gradient(
+      circle at 82% 14%,
+      rgba(251, 191, 36, 0.14),
+      transparent 34%
+    ),
+    radial-gradient(
+      circle at 58% 90%,
+      rgba(251, 113, 133, 0.1),
+      transparent 36%
+    ),
     #110716;
 }
 
@@ -117,9 +213,21 @@
   --hero-overlay-b: rgba(217, 70, 239, 0.13);
   --hero-overlay-c: rgba(34, 211, 238, 0.1);
   --theme-bg:
-    radial-gradient(circle at 16% 10%, rgba(99, 102, 241, 0.2), transparent 34%),
-    radial-gradient(circle at 84% 18%, rgba(217, 70, 239, 0.16), transparent 34%),
-    radial-gradient(circle at 56% 90%, rgba(34, 211, 238, 0.1), transparent 36%),
+    radial-gradient(
+      circle at 16% 10%,
+      rgba(99, 102, 241, 0.2),
+      transparent 34%
+    ),
+    radial-gradient(
+      circle at 84% 18%,
+      rgba(217, 70, 239, 0.16),
+      transparent 34%
+    ),
+    radial-gradient(
+      circle at 56% 90%,
+      rgba(34, 211, 238, 0.1),
+      transparent 36%
+    ),
     #08071b;
 }
 
@@ -138,9 +246,21 @@
   --hero-overlay-b: rgba(249, 115, 22, 0.14);
   --hero-overlay-c: rgba(250, 204, 21, 0.1);
   --theme-bg:
-    radial-gradient(circle at 12% 10%, rgba(251, 113, 133, 0.2), transparent 34%),
-    radial-gradient(circle at 84% 16%, rgba(249, 115, 22, 0.16), transparent 34%),
-    radial-gradient(circle at 58% 90%, rgba(250, 204, 21, 0.1), transparent 36%),
+    radial-gradient(
+      circle at 12% 10%,
+      rgba(251, 113, 133, 0.2),
+      transparent 34%
+    ),
+    radial-gradient(
+      circle at 84% 16%,
+      rgba(249, 115, 22, 0.16),
+      transparent 34%
+    ),
+    radial-gradient(
+      circle at 58% 90%,
+      rgba(250, 204, 21, 0.1),
+      transparent 36%
+    ),
     #12070c;
 }
 
@@ -159,9 +279,21 @@
   --hero-overlay-b: rgba(16, 185, 129, 0.14);
   --hero-overlay-c: rgba(45, 212, 191, 0.1);
   --theme-bg:
-    radial-gradient(circle at 12% 12%, rgba(74, 222, 128, 0.2), transparent 34%),
-    radial-gradient(circle at 84% 14%, rgba(16, 185, 129, 0.16), transparent 34%),
-    radial-gradient(circle at 58% 90%, rgba(45, 212, 191, 0.1), transparent 36%),
+    radial-gradient(
+      circle at 12% 12%,
+      rgba(74, 222, 128, 0.2),
+      transparent 34%
+    ),
+    radial-gradient(
+      circle at 84% 14%,
+      rgba(16, 185, 129, 0.16),
+      transparent 34%
+    ),
+    radial-gradient(
+      circle at 58% 90%,
+      rgba(45, 212, 191, 0.1),
+      transparent 36%
+    ),
     #06110b;
 }
 
@@ -175,13 +307,22 @@
     color-mix(in oklab, var(--border-neon-strong) 14%, #ffffff)
   );
   --control-border-calm: color-mix(in oklab, var(--border-neon) 50%, #9ca3af);
-  --control-border-accent: color-mix(in oklab, var(--border-neon-strong) 72%, #475569);
+  --control-border-accent: color-mix(
+    in oklab,
+    var(--border-neon-strong) 72%,
+    #475569
+  );
   --shadow-ambient: 0 0.45rem 1rem rgba(15, 23, 42, 0.11);
-  --glow-calm: 0 0 0.5rem color-mix(in oklab, var(--border-neon) 16%, transparent);
-  --glow-accent: 0 0 0.85rem color-mix(in oklab, var(--border-neon) 28%, transparent);
-  --glow-accent-strong: 0 0 1rem color-mix(in oklab, var(--border-neon-strong) 24%, transparent);
-  --focus-ring-soft: 0 0 0 2px color-mix(in oklab, var(--border-neon) 32%, transparent);
-  --focus-ring-strong: 0 0 0 4px color-mix(in oklab, var(--border-neon-strong) 24%, transparent);
+  --glow-calm: 0 0 0.5rem
+    color-mix(in oklab, var(--border-neon) 16%, transparent);
+  --glow-accent: 0 0 0.85rem
+    color-mix(in oklab, var(--border-neon) 28%, transparent);
+  --glow-accent-strong: 0 0 1rem
+    color-mix(in oklab, var(--border-neon-strong) 24%, transparent);
+  --focus-ring-soft: 0 0 0 2px
+    color-mix(in oklab, var(--border-neon) 32%, transparent);
+  --focus-ring-strong: 0 0 0 4px
+    color-mix(in oklab, var(--border-neon-strong) 24%, transparent);
   --text-primary: color-mix(in oklab, var(--border-neon) 24%, #091018);
   --text-muted: color-mix(in oklab, var(--border-neon-strong) 14%, #475569);
   --title-color: color-mix(in oklab, var(--border-neon) 32%, #060b12);
@@ -189,12 +330,20 @@
   --status-color: color-mix(in oklab, var(--border-neon) 26%, #1e293b);
   --heading-color: color-mix(in oklab, var(--border-neon) 28%, #0f172a);
   --theme-bg:
-    radial-gradient(circle at 12% 12%, color-mix(in oklab, var(--border-neon) 25%, transparent), transparent 34%),
+    radial-gradient(
+      circle at 12% 12%,
+      color-mix(in oklab, var(--border-neon) 25%, transparent),
+      transparent 34%
+    ),
     radial-gradient(
       circle at 84% 16%,
       color-mix(in oklab, var(--border-neon-strong) 20%, transparent),
       transparent 32%
     ),
-    radial-gradient(circle at 58% 90%, rgba(250, 204, 21, 0.08), transparent 34%),
+    radial-gradient(
+      circle at 58% 90%,
+      rgba(250, 204, 21, 0.08),
+      transparent 34%
+    ),
     #f5f8ff;
 }

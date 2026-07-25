@@ -1,6 +1,13 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import type { PropsWithChildren } from "react";
-import { COLOR_MODES, DEFAULT_COLOR_MODE, DEFAULT_THEME, THEMES, isColorMode, isThemeName } from "./themes";
+import {
+  COLOR_MODES,
+  DEFAULT_COLOR_MODE,
+  DEFAULT_THEME,
+  THEMES,
+  isColorMode,
+  isThemeName,
+} from "./themes";
 import type { ColorMode, ThemeName } from "./themes";
 const THEME_STORAGE_KEY = "canopy-connect-theme";
 const COLOR_MODE_STORAGE_KEY = "canopy-connect-color-mode";
