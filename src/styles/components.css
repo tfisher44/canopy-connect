@@ -258,7 +258,7 @@
 
 .app-ribbon__title {
   margin: 0 0 0.1rem;
-  font-family: "Bitcount Grid Double", Manrope, system-ui, sans-serif;
+  font-family: "Bebas Neue", Manrope, system-ui, sans-serif;
   font-weight: 700;
   font-size: clamp(2rem, 4vw, 3.4rem);
   line-height: 0.95;
