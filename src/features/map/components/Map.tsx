@@ -5,6 +5,8 @@ import type { ArcgisMap } from "@arcgis/map-components/components/arcgis-map/cus
 import type {} from "@arcgis/map-components/types/react";
 import { useMapRuntime } from "../../../map/context/MapContext";
 
+// TODO: need to include the arcgis api in order to enable search
+
 export function MapPlaceholder() {
   const { error, setReady, setError, reset } = useMapRuntime();
   const mapElementRef = useRef<ArcgisMap | null>(null);
@@ -38,6 +40,7 @@ export function MapPlaceholder() {
         import("@arcgis/map-components/components/arcgis-zoom/customElement"),
         import("@arcgis/map-components/components/arcgis-search/customElement"),
         import("@arcgis/map-components/components/arcgis-locate/customElement"),
+        import("@arcgis/map-components/components/arcgis-home/customElement"),
       ]);
 
       if (isMounted) {
@@ -125,10 +128,11 @@ export function MapPlaceholder() {
           autoDestroyDisabled={true}
         >
           <arcgis-search slot="top-left" />
-          <arcgis-locate slot="top-left" />
           <arcgis-layer-list slot="bottom-left" />
-          <arcgis-fullscreen slot="top-right" />
+          <arcgis-home slot="top-right" />
+          <arcgis-locate slot="top-right" />
           <arcgis-zoom slot="top-right" />
+          <arcgis-fullscreen slot="top-right" />
         </arcgis-map>
       ) : (
         <div className="map-placeholder__viewport" role="status" aria-live="polite" />
