@@ -21,6 +21,7 @@
     "@esri/calcite-components": "^5.1.2",
     "@hookform/resolvers": "^5.4.0",
     "@radix-ui/react-label": "^2.1.13",
+    "@radix-ui/react-toggle-group": "^1.1.17",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-hook-form": "^7.82.0",

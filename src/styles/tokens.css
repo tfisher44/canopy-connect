@@ -1,0 +1,174 @@
+:root {
+  font-family: Manrope, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.55;
+  font-weight: 400;
+  color: #e9f7ef;
+  --surface-glass: rgba(14, 23, 41, 0.58);
+  --surface-matte: rgba(9, 16, 30, 0.9);
+  --border-neon: rgba(34, 211, 238, 0.44);
+  --border-neon-strong: rgba(168, 85, 247, 0.8);
+  --border-muted: rgba(148, 163, 184, 0.24);
+  --text-primary: #e9f7ef;
+  --text-muted: #9ec7b5;
+  --title-color: #e6ffe6;
+  --subtitle-color: #bfd5f8;
+  --status-color: #d4ecff;
+  --heading-color: #e8ffee;
+  --hero-overlay-a: rgba(34, 211, 238, 0.14);
+  --hero-overlay-b: rgba(168, 85, 247, 0.14);
+  --hero-overlay-c: rgba(250, 204, 21, 0.1);
+  --theme-bg:
+    radial-gradient(circle at 12% 12%, rgba(34, 211, 238, 0.16), transparent 34%),
+    radial-gradient(circle at 84% 16%, rgba(168, 85, 247, 0.14), transparent 32%),
+    radial-gradient(circle at 58% 90%, rgba(251, 191, 36, 0.1), transparent 34%),
+    #060a13;
+  --danger: #fb7185;
+  --header-height: 6.4rem;
+}
+
+:root[data-theme="aurora"] {
+  --surface-glass: rgba(14, 23, 41, 0.58);
+  --surface-matte: rgba(9, 16, 30, 0.9);
+  --border-neon: rgba(34, 211, 238, 0.44);
+  --border-neon-strong: rgba(168, 85, 247, 0.8);
+  --text-primary: #e9f7ef;
+  --text-muted: #9ec7b5;
+  --title-color: #e6ffe6;
+  --subtitle-color: #bfd5f8;
+  --status-color: #d4ecff;
+  --heading-color: #e8ffee;
+  --hero-overlay-a: rgba(34, 211, 238, 0.14);
+  --hero-overlay-b: rgba(168, 85, 247, 0.14);
+  --hero-overlay-c: rgba(250, 204, 21, 0.1);
+  --theme-bg:
+    radial-gradient(circle at 12% 12%, rgba(34, 211, 238, 0.16), transparent 34%),
+    radial-gradient(circle at 84% 16%, rgba(168, 85, 247, 0.14), transparent 32%),
+    radial-gradient(circle at 58% 90%, rgba(251, 191, 36, 0.1), transparent 34%),
+    #060a13;
+}
+
+:root[data-theme="canopy-dusk"] {
+  --surface-glass: rgba(11, 27, 22, 0.58);
+  --surface-matte: rgba(7, 20, 16, 0.9);
+  --border-neon: rgba(45, 212, 191, 0.45);
+  --border-neon-strong: rgba(59, 130, 246, 0.76);
+  --text-primary: #ecfdf5;
+  --text-muted: #9ad7c0;
+  --title-color: #ecfdf5;
+  --subtitle-color: #c7fae4;
+  --status-color: #d9fff1;
+  --heading-color: #dbffe9;
+  --hero-overlay-a: rgba(45, 212, 191, 0.15);
+  --hero-overlay-b: rgba(16, 185, 129, 0.12);
+  --hero-overlay-c: rgba(56, 189, 248, 0.1);
+  --theme-bg:
+    radial-gradient(circle at 14% 11%, rgba(45, 212, 191, 0.16), transparent 35%),
+    radial-gradient(circle at 82% 18%, rgba(59, 130, 246, 0.14), transparent 34%),
+    radial-gradient(circle at 54% 90%, rgba(16, 185, 129, 0.08), transparent 36%),
+    #060f0c;
+}
+
+:root[data-theme="sunset-neon"] {
+  --surface-glass: rgba(34, 17, 44, 0.58);
+  --surface-matte: rgba(30, 12, 40, 0.9);
+  --border-neon: rgba(244, 114, 182, 0.45);
+  --border-neon-strong: rgba(251, 191, 36, 0.8);
+  --text-primary: #fdf2f8;
+  --text-muted: #f5bde0;
+  --title-color: #fff4fb;
+  --subtitle-color: #ffd1ea;
+  --status-color: #ffe1f2;
+  --heading-color: #ffe8f7;
+  --hero-overlay-a: rgba(244, 114, 182, 0.14);
+  --hero-overlay-b: rgba(251, 191, 36, 0.12);
+  --hero-overlay-c: rgba(251, 113, 133, 0.1);
+  --theme-bg:
+    radial-gradient(circle at 14% 12%, rgba(244, 114, 182, 0.18), transparent 34%),
+    radial-gradient(circle at 82% 14%, rgba(251, 191, 36, 0.14), transparent 34%),
+    radial-gradient(circle at 58% 90%, rgba(251, 113, 133, 0.1), transparent 36%),
+    #110716;
+}
+
+:root[data-theme="midnight-bloom"] {
+  --surface-glass: rgba(18, 18, 46, 0.58);
+  --surface-matte: rgba(12, 10, 36, 0.9);
+  --border-neon: rgba(99, 102, 241, 0.46);
+  --border-neon-strong: rgba(217, 70, 239, 0.82);
+  --text-primary: #f3f4ff;
+  --text-muted: #c7c5ee;
+  --title-color: #f4f4ff;
+  --subtitle-color: #d7d4ff;
+  --status-color: #e7e6ff;
+  --heading-color: #eeedff;
+  --hero-overlay-a: rgba(99, 102, 241, 0.16);
+  --hero-overlay-b: rgba(217, 70, 239, 0.13);
+  --hero-overlay-c: rgba(34, 211, 238, 0.1);
+  --theme-bg:
+    radial-gradient(circle at 16% 10%, rgba(99, 102, 241, 0.2), transparent 34%),
+    radial-gradient(circle at 84% 18%, rgba(217, 70, 239, 0.16), transparent 34%),
+    radial-gradient(circle at 56% 90%, rgba(34, 211, 238, 0.1), transparent 36%),
+    #08071b;
+}
+
+:root[data-theme="ember-mist"] {
+  --surface-glass: rgba(44, 18, 22, 0.58);
+  --surface-matte: rgba(30, 13, 17, 0.9);
+  --border-neon: rgba(251, 113, 133, 0.46);
+  --border-neon-strong: rgba(249, 115, 22, 0.8);
+  --text-primary: #fff1f2;
+  --text-muted: #f6c6cb;
+  --title-color: #fff1f2;
+  --subtitle-color: #ffd8dd;
+  --status-color: #ffe5e8;
+  --heading-color: #ffecef;
+  --hero-overlay-a: rgba(251, 113, 133, 0.16);
+  --hero-overlay-b: rgba(249, 115, 22, 0.14);
+  --hero-overlay-c: rgba(250, 204, 21, 0.1);
+  --theme-bg:
+    radial-gradient(circle at 12% 10%, rgba(251, 113, 133, 0.2), transparent 34%),
+    radial-gradient(circle at 84% 16%, rgba(249, 115, 22, 0.16), transparent 34%),
+    radial-gradient(circle at 58% 90%, rgba(250, 204, 21, 0.1), transparent 36%),
+    #12070c;
+}
+
+:root[data-theme="verdant-glow"] {
+  --surface-glass: rgba(10, 30, 20, 0.58);
+  --surface-matte: rgba(7, 22, 15, 0.9);
+  --border-neon: rgba(74, 222, 128, 0.46);
+  --border-neon-strong: rgba(16, 185, 129, 0.8);
+  --text-primary: #eefdf3;
+  --text-muted: #b6e8c8;
+  --title-color: #f0fff4;
+  --subtitle-color: #ccf8de;
+  --status-color: #dcffe8;
+  --heading-color: #e7ffef;
+  --hero-overlay-a: rgba(74, 222, 128, 0.15);
+  --hero-overlay-b: rgba(16, 185, 129, 0.14);
+  --hero-overlay-c: rgba(45, 212, 191, 0.1);
+  --theme-bg:
+    radial-gradient(circle at 12% 12%, rgba(74, 222, 128, 0.2), transparent 34%),
+    radial-gradient(circle at 84% 14%, rgba(16, 185, 129, 0.16), transparent 34%),
+    radial-gradient(circle at 58% 90%, rgba(45, 212, 191, 0.1), transparent 36%),
+    #06110b;
+}
+
+:root[data-mode="light"] {
+  --surface-glass: rgba(255, 255, 255, 0.82);
+  --surface-matte: rgba(245, 249, 255, 0.92);
+  --border-muted: color-mix(in oklab, var(--border-neon) 30%, #9ca3af);
+  --text-primary: color-mix(in oklab, var(--border-neon) 24%, #091018);
+  --text-muted: color-mix(in oklab, var(--border-neon-strong) 14%, #475569);
+  --title-color: color-mix(in oklab, var(--border-neon) 32%, #060b12);
+  --subtitle-color: color-mix(in oklab, var(--border-neon-strong) 22%, #334155);
+  --status-color: color-mix(in oklab, var(--border-neon) 26%, #1e293b);
+  --heading-color: color-mix(in oklab, var(--border-neon) 28%, #0f172a);
+  --theme-bg:
+    radial-gradient(circle at 12% 12%, color-mix(in oklab, var(--border-neon) 25%, transparent), transparent 34%),
+    radial-gradient(
+      circle at 84% 16%,
+      color-mix(in oklab, var(--border-neon-strong) 20%, transparent),
+      transparent 32%
+    ),
+    radial-gradient(circle at 58% 90%, rgba(250, 204, 21, 0.08), transparent 34%),
+    #f5f8ff;
+}

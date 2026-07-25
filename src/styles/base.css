@@ -1,0 +1,14 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  color: var(--text-primary);
+  background: var(--theme-bg);
+  font-variant-ligatures: common-ligatures;
+}
+
+#root {
+  min-height: 100vh;
+}
