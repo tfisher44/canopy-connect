@@ -19,6 +19,18 @@ export type MapRuntimeState = {
   selectedTreeId: string | null;
   treeSelectionEnabled: boolean;
   treeSelectionMessage: string | null;
+  newTreePlacementEnabled: boolean;
+  newTreePlacementMessage: string | null;
+  draftTreeLocation: {
+    latitude: number;
+    longitude: number;
+  } | null;
+  createdTrees: Array<{
+    id: string;
+    latitude: number;
+    longitude: number;
+    isAlive: boolean;
+  }>;
 };
 
 type SetReadyPayload = {
@@ -33,6 +45,13 @@ export type LocationSearchResult = {
   longitude: number;
 };
 
+export type CreatedTreeRecord = {
+  id: string;
+  latitude: number;
+  longitude: number;
+  isAlive: boolean;
+};
+
 type MapContextValue = MapRuntimeState & {
   setLoading: () => void;
   setReady: (payload: SetReadyPayload) => void;
@@ -42,6 +61,10 @@ type MapContextValue = MapRuntimeState & {
   setTreeSelectionEnabled: (enabled: boolean) => void;
   setSelectedTreeId: (treeId: string | null) => void;
   setTreeSelectionMessage: (message: string | null) => void;
+  setNewTreePlacementEnabled: (enabled: boolean) => void;
+  setDraftTreeLocation: (location: { latitude: number; longitude: number } | null) => void;
+  setNewTreePlacementMessage: (message: string | null) => void;
+  addCreatedTree: (tree: CreatedTreeRecord) => void;
   reset: () => void;
 };
 
@@ -52,6 +75,13 @@ type MapRuntimeAction =
   | { type: "SET_TREE_SELECTION_ENABLED"; payload: boolean }
   | { type: "SET_SELECTED_TREE_ID"; payload: string | null }
   | { type: "SET_TREE_SELECTION_MESSAGE"; payload: string | null }
+  | { type: "SET_NEW_TREE_PLACEMENT_ENABLED"; payload: boolean }
+  | {
+      type: "SET_DRAFT_TREE_LOCATION";
+      payload: { latitude: number; longitude: number } | null;
+    }
+  | { type: "SET_NEW_TREE_PLACEMENT_MESSAGE"; payload: string | null }
+  | { type: "ADD_CREATED_TREE"; payload: CreatedTreeRecord }
   | { type: "RESET" };
 
 const GEOCODER_URL = "https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer";
@@ -64,6 +94,10 @@ const initialMapRuntimeState: MapRuntimeState = {
   selectedTreeId: null,
   treeSelectionEnabled: false,
   treeSelectionMessage: null,
+  newTreePlacementEnabled: false,
+  newTreePlacementMessage: null,
+  draftTreeLocation: null,
+  createdTrees: [],
 };
 
 function mapRuntimeReducer(state: MapRuntimeState, action: MapRuntimeAction): MapRuntimeState {
@@ -83,6 +117,10 @@ function mapRuntimeReducer(state: MapRuntimeState, action: MapRuntimeAction): Ma
         selectedTreeId: state.selectedTreeId,
         treeSelectionEnabled: state.treeSelectionEnabled,
         treeSelectionMessage: state.treeSelectionMessage,
+        newTreePlacementEnabled: state.newTreePlacementEnabled,
+        newTreePlacementMessage: state.newTreePlacementMessage,
+        draftTreeLocation: state.draftTreeLocation,
+        createdTrees: state.createdTrees,
       };
     case "SET_ERROR":
       return {
@@ -121,6 +159,50 @@ function mapRuntimeReducer(state: MapRuntimeState, action: MapRuntimeAction): Ma
         ...state,
         treeSelectionMessage: action.payload,
       };
+    case "SET_NEW_TREE_PLACEMENT_ENABLED":
+      if (
+        state.newTreePlacementEnabled === action.payload &&
+        (action.payload || (state.newTreePlacementMessage === null && state.draftTreeLocation === null))
+      ) {
+        return state;
+      }
+      return {
+        ...state,
+        newTreePlacementEnabled: action.payload,
+        draftTreeLocation: action.payload ? state.draftTreeLocation : null,
+        newTreePlacementMessage: action.payload
+          ? "Click the map to place your new tree."
+          : null,
+      };
+    case "SET_DRAFT_TREE_LOCATION":
+      if (
+        state.draftTreeLocation?.latitude === action.payload?.latitude &&
+        state.draftTreeLocation?.longitude === action.payload?.longitude
+      ) {
+        return state;
+      }
+      return {
+        ...state,
+        draftTreeLocation: action.payload,
+      };
+    case "SET_NEW_TREE_PLACEMENT_MESSAGE":
+      if (state.newTreePlacementMessage === action.payload) {
+        return state;
+      }
+      return {
+        ...state,
+        newTreePlacementMessage: action.payload,
+      };
+    case "ADD_CREATED_TREE": {
+      const nextTrees = [
+        ...state.createdTrees.filter((tree) => tree.id !== action.payload.id),
+        action.payload,
+      ];
+      return {
+        ...state,
+        createdTrees: nextTrees,
+      };
+    }
     case "RESET":
       return initialMapRuntimeState;
     default:
@@ -210,6 +292,18 @@ export function MapProvider({ children }: PropsWithChildren) {
       },
       setTreeSelectionMessage(message) {
         dispatch({ type: "SET_TREE_SELECTION_MESSAGE", payload: message });
+      },
+      setNewTreePlacementEnabled(enabled) {
+        dispatch({ type: "SET_NEW_TREE_PLACEMENT_ENABLED", payload: enabled });
+      },
+      setDraftTreeLocation(location) {
+        dispatch({ type: "SET_DRAFT_TREE_LOCATION", payload: location });
+      },
+      setNewTreePlacementMessage(message) {
+        dispatch({ type: "SET_NEW_TREE_PLACEMENT_MESSAGE", payload: message });
+      },
+      addCreatedTree(tree) {
+        dispatch({ type: "ADD_CREATED_TREE", payload: tree });
       },
       reset() {
         dispatch({ type: "RESET" });

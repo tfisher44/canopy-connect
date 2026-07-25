@@ -30,20 +30,12 @@ describe("TreeStoryFlowPanel", () => {
     expect(screen.getByRole("heading", { name: "Add a new Tree/Story" })).toBeInTheDocument();
   });
 
-  it("lets users move through new tree path and navigate back from story step", async () => {
+  it("keeps new tree flow blocked until a map location is chosen", async () => {
     const user = userEvent.setup();
     renderWithProviders();
 
     await user.click(screen.getByRole("button", { name: "Add new tree and story" }));
     expect(screen.getByRole("heading", { name: "Choose location" })).toBeInTheDocument();
-
-    await user.click(screen.getByRole("button", { name: "Continue to add tree" }));
-    expect(screen.getByRole("heading", { name: "Add tree" })).toBeInTheDocument();
-
-    await user.click(screen.getByRole("button", { name: "Continue to story form" }));
-    expect(screen.getByRole("heading", { name: "Add your tree story" })).toBeInTheDocument();
-
-    await user.click(screen.getByRole("button", { name: "Back" }));
-    expect(screen.getByRole("heading", { name: "Add tree" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Continue to add tree" })).toBeDisabled();
   });
 });

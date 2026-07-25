@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type Graphic from "@arcgis/core/Graphic";
 import type WebMap from "@arcgis/core/WebMap";
 import type MapView from "@arcgis/core/views/MapView";
+import type GraphicsLayer from "@arcgis/core/layers/GraphicsLayer";
 import type { ArcgisMap } from "@arcgis/map-components/components/arcgis-map/customElement";
 import type {} from "@arcgis/map-components/types/react";
 import { useMapRuntime } from "../../../map/context/MapContext";
@@ -26,6 +27,7 @@ function getErrorMessage(cause: unknown): string {
 }
 
 const STORY_ELIGIBLE_TREE_LAYER_ID = "story-eligible-trees";
+const TREE_STORY_OVERLAY_LAYER_ID = "tree-story-workflow-overlay";
 
 function getTreeIdFromGraphic(graphic: Graphic): string | null {
   const attributes = graphic.attributes as unknown;
@@ -53,11 +55,16 @@ export function MapPlaceholder() {
     error,
     mapView,
     treeSelectionEnabled,
+    newTreePlacementEnabled,
+    draftTreeLocation,
+    createdTrees,
     setLoading,
     setReady,
     setError,
     setSelectedTreeId,
     setTreeSelectionMessage,
+    setDraftTreeLocation,
+    setNewTreePlacementMessage,
     reset,
   } = useMapRuntime();
   const mapElementRef = useRef<ArcgisMap | null>(null);
@@ -218,6 +225,120 @@ export function MapPlaceholder() {
       clickHandle.remove();
     };
   }, [mapView, setSelectedTreeId, setTreeSelectionMessage, treeSelectionEnabled]);
+
+  useEffect(() => {
+    if (!mapView || !newTreePlacementEnabled) {
+      return;
+    }
+
+    const clickHandle = mapView.on("click", (event) => {
+      const mapPoint = event.mapPoint;
+      if (!mapPoint) {
+        setDraftTreeLocation(null);
+        setNewTreePlacementMessage("Unable to read map location from click.");
+        return;
+      }
+
+      const rawLatitude = mapPoint.latitude;
+      const rawLongitude = mapPoint.longitude;
+      if (typeof rawLatitude !== "number" || typeof rawLongitude !== "number") {
+        setDraftTreeLocation(null);
+        setNewTreePlacementMessage("Unable to read map coordinates from click.");
+        return;
+      }
+
+      const latitude = Number(rawLatitude.toFixed(6));
+      const longitude = Number(rawLongitude.toFixed(6));
+      setDraftTreeLocation({ latitude, longitude });
+      setNewTreePlacementMessage(`Tree location set to ${latitude}, ${longitude}.`);
+    });
+
+    return () => {
+      clickHandle.remove();
+    };
+  }, [mapView, newTreePlacementEnabled, setDraftTreeLocation, setNewTreePlacementMessage]);
+
+  useEffect(() => {
+    if (!mapView?.map) {
+      return;
+    }
+    const map = mapView.map;
+    let isDisposed = false;
+    let overlayLayer: GraphicsLayer | null = null;
+
+    const drawOverlay = async () => {
+      const [{ default: GraphicClass }, { default: GraphicsLayerClass }] = await Promise.all([
+        import("@arcgis/core/Graphic"),
+        import("@arcgis/core/layers/GraphicsLayer"),
+      ]);
+      if (isDisposed) {
+        return;
+      }
+
+      const existing = map.findLayerById(TREE_STORY_OVERLAY_LAYER_ID);
+      if (existing && existing.type === "graphics") {
+        overlayLayer = existing as GraphicsLayer;
+      } else {
+        overlayLayer = new GraphicsLayerClass({ id: TREE_STORY_OVERLAY_LAYER_ID });
+        map.add(overlayLayer);
+      }
+
+      overlayLayer.removeAll();
+
+      for (const tree of createdTrees) {
+        overlayLayer.add(
+          new GraphicClass({
+            geometry: {
+              type: "point",
+              latitude: tree.latitude,
+              longitude: tree.longitude,
+            },
+            symbol: {
+              type: "simple-marker",
+              style: "circle",
+              color: tree.isAlive ? "#34d399" : "#94a3b8",
+              outline: {
+                color: "#0f172a",
+                width: 1.5,
+              },
+              size: 11,
+            },
+            attributes: {
+              treeId: tree.id,
+            },
+          }),
+        );
+      }
+
+      if (draftTreeLocation) {
+        overlayLayer.add(
+          new GraphicClass({
+            geometry: {
+              type: "point",
+              latitude: draftTreeLocation.latitude,
+              longitude: draftTreeLocation.longitude,
+            },
+            symbol: {
+              type: "simple-marker",
+              style: "x",
+              color: "#38bdf8",
+              size: 13,
+              outline: {
+                color: "#082f49",
+                width: 2,
+              },
+            },
+          }),
+        );
+      }
+    };
+
+    void drawOverlay();
+
+    return () => {
+      isDisposed = true;
+    };
+  }, [createdTrees, draftTreeLocation, mapView]);
 
 
   return (

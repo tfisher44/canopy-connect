@@ -1,4 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
+import { AddTreeForm } from "../../../components/add-tree-form";
+import type { AddTreeFormValues } from "../schema";
+import { createTree } from "../services/treeService";
 import type { LocationSearchResult } from "../../../map/context/MapContext";
 import { useMapRuntime } from "../../../map/context/MapContext";
 
@@ -34,7 +37,14 @@ export function TreeStoryFlowPanel() {
     status,
     selectedTreeId,
     treeSelectionMessage,
+    newTreePlacementMessage,
+    draftTreeLocation,
     setTreeSelectionEnabled,
+    setSelectedTreeId,
+    setTreeSelectionMessage,
+    setNewTreePlacementEnabled,
+    setNewTreePlacementMessage,
+    addCreatedTree,
     searchLocations,
     zoomToLocation,
   } = useMapRuntime();
@@ -44,6 +54,8 @@ export function TreeStoryFlowPanel() {
   const [searchResults, setSearchResults] = useState<LocationSearchResult[]>([]);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [isSearching, setIsSearching] = useState(false);
+  const [treeSubmitError, setTreeSubmitError] = useState<string | null>(null);
+  const [treeSubmitting, setTreeSubmitting] = useState(false);
 
   const handleLocationQueryChange = (value: string) => {
     setLocationQuery(value);
@@ -54,13 +66,46 @@ export function TreeStoryFlowPanel() {
     }
   };
 
+  const handleAddTreeSubmit = async (values: AddTreeFormValues) => {
+    if (!draftTreeLocation) {
+      setTreeSubmitError("Select a tree location on the map before adding a tree.");
+      return;
+    }
+
+    setTreeSubmitError(null);
+    setTreeSubmitting(true);
+    try {
+      const createdTree = await createTree({
+        latitude: draftTreeLocation.latitude,
+        longitude: draftTreeLocation.longitude,
+        isAlive: values.isAlive,
+        imageFile: values.imageFile,
+      });
+      addCreatedTree(createdTree);
+      setSelectedTreeId(createdTree.id);
+      setNewTreePlacementEnabled(false);
+      setNewTreePlacementMessage(null);
+      setStep("story-form");
+    } catch (cause) {
+      const message = cause instanceof Error ? cause.message : "Failed to add tree.";
+      setTreeSubmitError(message);
+    } finally {
+      setTreeSubmitting(false);
+    }
+  };
+
   const resetFlow = () => {
     setPath(null);
     setStep("choose-path");
     setLocationQuery("");
     setSearchResults([]);
     setSearchError(null);
+    setTreeSubmitError(null);
     setTreeSelectionEnabled(false);
+    setTreeSelectionMessage(null);
+    setSelectedTreeId(null);
+    setNewTreePlacementEnabled(false);
+    setNewTreePlacementMessage(null);
   };
 
   const goBack = () => {
@@ -134,6 +179,10 @@ export function TreeStoryFlowPanel() {
     setTreeSelectionEnabled(step === "existing-tree-location");
   }, [setTreeSelectionEnabled, step]);
 
+  useEffect(() => {
+    setNewTreePlacementEnabled(step === "new-tree-location" || step === "new-tree-form");
+  }, [setNewTreePlacementEnabled, step]);
+
   const locationStepHint = useMemo(() => {
     if (!mapReady) {
       return "Map is still loading. Search and selection will be available once the map is ready.";
@@ -141,7 +190,7 @@ export function TreeStoryFlowPanel() {
     if (step === "existing-tree-location") {
       return "Now click a story-eligible tree on the map to continue.";
     }
-    return "Location is set. Continue when ready to add the tree details.";
+    return "Click the map to set your new tree location, then continue.";
   }, [mapReady, step]);
 
   const handleResultZoom = (result: LocationSearchResult) => {
@@ -248,11 +297,17 @@ export function TreeStoryFlowPanel() {
       {step === "new-tree-location" ? (
         <section className="stack" aria-label="New tree location flow step">
           <p className="muted">{locationStepHint}</p>
+          {newTreePlacementMessage ? <p className="muted">{newTreePlacementMessage}</p> : null}
           <div className="tree-story-flow__actions">
             <button type="button" className="button button--ghost" onClick={goBack}>
               Back
             </button>
-            <button type="button" className="button" onClick={() => setStep("new-tree-form")}>
+            <button
+              type="button"
+              className="button"
+              onClick={() => setStep("new-tree-form")}
+              disabled={!draftTreeLocation}
+            >
               Continue to add tree
             </button>
           </div>
@@ -260,14 +315,25 @@ export function TreeStoryFlowPanel() {
       ) : null}
 
       {step === "new-tree-form" ? (
-        <section className="stack" aria-label="Add tree flow step">
-          <p className="muted">Tree image and dead/alive controls will be implemented in Phase 3.</p>
+        <section className="stack tree-story-flow__compact-step" aria-label="Add tree flow step">
+          <p className="muted">Upload a tree image and choose alive/dead status.</p>
+          {treeSubmitError ? (
+            <p className="error" role="alert">
+              {treeSubmitError}
+            </p>
+          ) : null}
+          <AddTreeForm
+            locationLabel={
+              draftTreeLocation
+                ? `${draftTreeLocation.latitude}, ${draftTreeLocation.longitude}`
+                : "Not selected"
+            }
+            submitting={treeSubmitting}
+            onSubmit={handleAddTreeSubmit}
+          />
           <div className="tree-story-flow__actions">
             <button type="button" className="button button--ghost" onClick={goBack}>
               Back
-            </button>
-            <button type="button" className="button" onClick={() => setStep("story-form")}>
-              Continue to story form
             </button>
           </div>
         </section>
