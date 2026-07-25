@@ -1,7 +1,12 @@
-import { render, screen } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
+import { afterEach } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { TreeStoryFlowPanel } from "./TreeStoryFlowPanel";
+
+afterEach(() => {
+  cleanup();
+});
 
 describe("TreeStoryFlowPanel", () => {
   it("lets users choose existing tree path and return to chooser", async () => {
