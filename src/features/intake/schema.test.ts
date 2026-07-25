@@ -1,5 +1,29 @@
 import { describe, expect, it } from "vitest";
-import { addStorySchema } from "./schema";
+import { addStorySchema, addTreeSchema } from "./schema";
+
+describe("addTreeSchema", () => {
+  it("accepts payload without tree image", () => {
+    const result = addTreeSchema.safeParse({
+      isAlive: true,
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects unsupported tree image types", () => {
+    const result = addTreeSchema.safeParse({
+      isAlive: true,
+      imageFile: new File(["content"], "tree.gif", { type: "image/gif" }),
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.flatten().fieldErrors.imageFile).toContain(
+        "Image must be JPG, PNG, or WEBP.",
+      );
+    }
+  });
+});
 
 describe("addStorySchema", () => {
   it("accepts valid story payload with optional contact fields omitted", () => {

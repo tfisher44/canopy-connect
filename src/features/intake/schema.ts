@@ -11,7 +11,7 @@ export const intakeSchema = z.object({
 
 export const addTreeSchema = z.object({
   isAlive: z.boolean(),
-  imageFile: imageFileSchema,
+  imageFile: imageFileSchema.optional(),
 });
 
 export const addStorySchema = z.object({

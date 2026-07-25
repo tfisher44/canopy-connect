@@ -111,7 +111,7 @@ describe("TreeStoryFlowPanel", () => {
     expect(screen.getByTestId("new-tree-placement-mode")).toHaveTextContent("on");
     expect(
       screen.getByText(
-        "Upload a tree image and choose alive/dead status. You can still click the map to move the pin.",
+        "Add an optional tree image and choose alive/dead status. You can still click the map to move the pin.",
       ),
     ).toBeInTheDocument();
     expect(screen.getAllByText("35.123456, -120.654321").length).toBeGreaterThan(0);

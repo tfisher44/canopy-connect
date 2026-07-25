@@ -2,7 +2,7 @@ export type CreateTreeInput = {
   latitude: number;
   longitude: number;
   isAlive: boolean;
-  imageFile: File;
+  imageFile?: File;
 };
 
 export type CreatedTree = {
@@ -43,7 +43,9 @@ export async function createTree(input: CreateTreeInput): Promise<CreatedTree> {
   formData.set("latitude", String(input.latitude));
   formData.set("longitude", String(input.longitude));
   formData.set("isAlive", String(input.isAlive));
-  formData.set("image", input.imageFile);
+  if (input.imageFile) {
+    formData.set("image", input.imageFile);
+  }
 
   const response = await fetch(endpoint, {
     method: "POST",

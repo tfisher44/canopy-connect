@@ -73,7 +73,7 @@ export function AddTreeForm({ locationLabel, submitting, onSubmit }: AddTreeForm
             {errors.imageFile.message}
           </p>
         ) : null}
-        <p className="muted">Accepted formats: JPG, PNG, WEBP (max 10MB).</p>
+        <p className="muted">Optional. Accepted formats: JPG, PNG, WEBP (max 10MB).</p>
       </div>
 
       <div className="field">

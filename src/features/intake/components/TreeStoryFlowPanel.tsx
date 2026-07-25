@@ -382,7 +382,8 @@ export function TreeStoryFlowPanel() {
       {step === "new-tree-form" ? (
         <section className="stack tree-story-flow__compact-step" aria-label="Add tree flow step">
           <p className="muted">
-            Upload a tree image and choose alive/dead status. You can still click the map to move the pin.
+            Add an optional tree image and choose alive/dead status. You can still click the map to
+            move the pin.
           </p>
           {newTreePlacementMessage ? (
             <p className="muted" role="status" aria-live="polite">
