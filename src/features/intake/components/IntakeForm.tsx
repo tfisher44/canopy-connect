@@ -22,12 +22,19 @@ export function IntakeForm() {
     submitStory(values);
     reset({ story: "" });
   };
+  const submitHandler = handleSubmit(onSubmit);
 
   return (
     <section className="panel stack" aria-labelledby="intake-title">
       <h2 id="intake-title">Story Intake</h2>
       <p className="muted">Enter a story now. Map editing integration comes next.</p>
-      <form className="stack" onSubmit={handleSubmit(onSubmit)} noValidate>
+      <form
+        className="stack"
+        onSubmit={(event) => {
+          void submitHandler(event);
+        }}
+        noValidate
+      >
         <div className="field">
           <Label.Root htmlFor="story">Story</Label.Root>
           <textarea

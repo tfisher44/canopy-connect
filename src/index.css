@@ -18,36 +18,6 @@ body {
   min-height: 100vh;
 }
 
-a {
-  color: #1d4ed8;
-}
-
-.app-shell {
-  max-width: 1000px;
-  margin: 0 auto;
-  padding: 1.25rem;
-}
-
-.app-header {
-  margin-bottom: 1rem;
-}
-
-.app-nav {
-  display: flex;
-  gap: 0.75rem;
-  margin-top: 0.5rem;
-}
-
-.app-nav a {
-  text-decoration: none;
-  padding: 0.25rem 0.5rem;
-  border-radius: 0.25rem;
-}
-
-.app-nav a.active {
-  background: #dbeafe;
-}
-
 .panel {
   background: #ffffff;
   border: 1px solid #e2e8f0;
@@ -83,6 +53,12 @@ a {
   cursor: pointer;
 }
 
+.button--ghost {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+}
+
 .button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
@@ -95,4 +71,58 @@ a {
 
 .muted {
   color: #475569;
+}
+
+.runtime-shell {
+  min-height: 100vh;
+  padding: 0.75rem;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 0.75rem;
+}
+
+.runtime-shell__header {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+}
+
+.runtime-shell__header h1 {
+  margin: 0;
+}
+
+.runtime-shell__header p {
+  margin: 0.25rem 0 0;
+}
+
+.runtime-shell__content {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+}
+
+.runtime-shell--panel-open .runtime-shell__content {
+  grid-template-columns: minmax(0, 3fr) minmax(0, 1fr);
+}
+
+.runtime-shell__map-region {
+  min-height: 0;
+  position: relative;
+}
+
+.runtime-shell__map-controls {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 2;
+}
+
+.runtime-shell__panel {
+  min-width: 0;
+}
+
+.runtime-shell__panel-toggle {
+  width: fit-content;
 }
