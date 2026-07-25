@@ -3,6 +3,25 @@
 **Generated**: 2026-07-24  
 **Estimated Complexity**: Medium
 
+## Status
+- **Overall**: Not Started
+- **Last Updated**: 2026-07-24
+- **Owner**: TBD
+- **Current Sprint**: none
+
+## Progress Checklist
+- [ ] Sprint 1 complete (Add-Flow Orchestration)
+  - [ ] Task 1.1 Create add-flow state machine
+  - [ ] Task 1.2 Build add-flow panel scaffolding
+  - [ ] Task 1.3 Add responsive single-page layout state hook
+- [ ] Sprint 2 complete (Geometry + Form Capture)
+  - [ ] Task 2.1 Implement point placement interaction
+  - [ ] Task 2.2 Build dynamic attribute form
+- [ ] Sprint 3 complete (Persist via applyEdits)
+  - [ ] Task 3.1 Implement create feature service
+  - [ ] Task 3.2 Wire submit orchestration in panel flow
+- [ ] Verification complete (single-page + 75/25 layout during Add Story)
+
 ## Overview
 Implement the end-to-end add-record workflow for one point layer: enter add mode, place a point, fill dynamic required attributes, submit via `applyEdits`, and show outcome.
 UX constraint: this workflow stays on one page; when the Add Story form is open, map width remains 75% and form panel width is 25%.

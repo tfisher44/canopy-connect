@@ -3,6 +3,19 @@
 **Generated**: 2026-07-24  
 **Estimated Complexity**: Medium
 
+## Status
+- **Overall**: Not Started
+- **Last Updated**: 2026-07-24
+- **Owner**: TBD
+- **Current Increment**: none
+
+## Progress Checklist
+- [ ] `010-foundation-map-runtime-plan.md` completed
+- [ ] `015-ui-theme-and-components-plan.md` completed
+- [ ] `020-add-record-flow-plan.md` completed
+- [ ] `030-hardening-demo-readiness-plan.md` completed
+- [ ] MVP demo-ready (single-page, 75/25 form-open layout, add-story flow)
+
 ## Overview
 This roadmap decomposes the editable map MVP into incremental, spec-driven plans that can be implemented in order.  
 Primary MVP target: desktop **single-page** web app that can add a new record to one ArcGIS point feature layer (no auth yet, no edit/delete, no attachments in v1).

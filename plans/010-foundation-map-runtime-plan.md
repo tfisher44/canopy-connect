@@ -3,6 +3,23 @@
 **Generated**: 2026-07-24  
 **Estimated Complexity**: Medium
 
+## Status
+- **Overall**: Not Started
+- **Last Updated**: 2026-07-24
+- **Owner**: TBD
+- **Current Sprint**: none
+
+## Progress Checklist
+- [ ] Sprint 1 complete (App Shell + Context)
+  - [ ] Task 1.1 Create app shell layout regions
+  - [ ] Task 1.2 Introduce map runtime context
+- [ ] Sprint 2 complete (Config + Layer Resolution)
+  - [ ] Task 2.1 Add env parsing and validation
+  - [ ] Task 2.2 Implement WebMap loader service
+  - [ ] Task 2.3 Resolve editable feature layer with capability checks
+- [ ] Sprint 3 complete (Schema Discovery)
+  - [ ] Task 3.1 Build editable schema discovery service
+
 ## Overview
 Establish the application shell, map lifecycle boundaries, env validation, layer resolution, and runtime schema discovery.  
 Outcome: a stable map runtime that can safely power editing features in the next increment.

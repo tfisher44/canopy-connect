@@ -3,6 +3,23 @@
 **Generated**: 2026-07-24  
 **Estimated Complexity**: Medium
 
+## Status
+- **Overall**: Not Started
+- **Last Updated**: 2026-07-24
+- **Owner**: TBD
+- **Current Sprint**: none
+
+## Progress Checklist
+- [ ] Sprint 1 complete (Map Mode Safety)
+  - [ ] Task 1.1 Implement map mode controller
+- [ ] Sprint 2 complete (Error/Status UX Consistency)
+  - [ ] Task 2.1 Create reusable feedback components
+  - [ ] Task 2.2 Integrate feedback into map + edit flow
+- [ ] Sprint 3 complete (Test and Ops Readiness)
+  - [ ] Task 3.1 Add add-flow integration test harness
+  - [ ] Task 3.2 Publish operator runbook and env template
+- [ ] Release readiness complete (`typecheck`, `lint`, `test`, manual regression)
+
 ## Overview
 Harden the add-record experience for repeatable demos and reliable handoff: map mode restoration, consistent feedback, test harnesses, and operator documentation.
 
