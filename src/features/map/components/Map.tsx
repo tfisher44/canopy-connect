@@ -4,7 +4,9 @@ import esriConfig from "@arcgis/core/config";
 import type WebMap from "@arcgis/core/WebMap";
 import type MapView from "@arcgis/core/views/MapView";
 import type GraphicsLayer from "@arcgis/core/layers/GraphicsLayer";
+import type ListItem from "@arcgis/core/widgets/LayerList/ListItem";
 import type { ArcgisMap } from "@arcgis/map-components/components/arcgis-map/customElement";
+import type { ArcgisLayerList } from "@arcgis/map-components/components/arcgis-layer-list/customElement";
 import type { ArcgisSearch } from "@arcgis/map-components/components/arcgis-search/customElement";
 import type {} from "@arcgis/map-components/types/react";
 import { useMapRuntime } from "../../../map/context/MapContext";
@@ -78,6 +80,21 @@ function bindSearchToMap(
   }
 }
 
+function configureLayerListLegendPanels(
+  layerListElement: ArcgisLayerList | null,
+): void {
+  if (!layerListElement) {
+    return;
+  }
+
+  layerListElement.listItemCreatedFunction = (event: { item: ListItem }) => {
+    event.item.panel = {
+      content: "legend",
+      open: false,
+    };
+  };
+}
+
 export function MapPlaceholder() {
   const {
     error,
@@ -97,6 +114,7 @@ export function MapPlaceholder() {
   } = useMapRuntime();
   const mapElementRef = useRef<ArcgisMap | null>(null);
   const searchElementRef = useRef<ArcgisSearch | null>(null);
+  const layerListElementRef = useRef<ArcgisLayerList | null>(null);
   const [componentsReady, setComponentsReady] = useState(
     import.meta.env.MODE === "test",
   );
@@ -149,6 +167,7 @@ export function MapPlaceholder() {
     }
 
     bindSearchToMap(mapElement, searchElementRef.current);
+  configureLayerListLegendPanels(layerListElementRef.current);
 
     let isMounted = true;
     setLoading();
@@ -173,6 +192,7 @@ export function MapPlaceholder() {
       }
 
       bindSearchToMap(mapElement, searchElementRef.current);
+      configureLayerListLegendPanels(layerListElementRef.current);
 
       mapView.navigation.momentumEnabled = false;
       const boundedExtent = mapView.extent?.clone();
@@ -199,11 +219,22 @@ export function MapPlaceholder() {
       bindSearchToMap(mapElement, searchElementRef.current);
     };
 
+    const handleLayerListReady: EventListener = () => {
+      if (!isMounted) {
+        return;
+      }
+      configureLayerListLegendPanels(layerListElementRef.current);
+    };
+
     mapElement.addEventListener("arcgisViewReadyChange", handleViewReady);
     mapElement.addEventListener("arcgisLoadError", handleLoadError);
     searchElementRef.current?.addEventListener(
       "arcgisReady",
       handleSearchReady,
+    );
+    layerListElementRef.current?.addEventListener(
+      "arcgisReady",
+      handleLayerListReady,
     );
 
     return () => {
@@ -213,6 +244,10 @@ export function MapPlaceholder() {
       searchElementRef.current?.removeEventListener(
         "arcgisReady",
         handleSearchReady,
+      );
+      layerListElementRef.current?.removeEventListener(
+        "arcgisReady",
+        handleLayerListReady,
       );
       reset();
     };
@@ -408,7 +443,7 @@ export function MapPlaceholder() {
           className="map-placeholder__viewport"
           item-id="20712c612e0149c99d32354f089881c4"
           center={[-119.44944, 37.16611]}
-          zoom={4}
+          zoom={5}
           autoDestroyDisabled={true}
         >
           <arcgis-search
@@ -418,6 +453,7 @@ export function MapPlaceholder() {
             className="map-placeholder__search"
           />
           <arcgis-layer-list
+            ref={layerListElementRef}
             slot="top-left"
             autoDestroyDisabled={true}
             className="map-placeholder__layer-list"
@@ -425,11 +461,11 @@ export function MapPlaceholder() {
           <arcgis-home slot="top-right" />
           <arcgis-zoom slot="top-right" />
           <arcgis-fullscreen slot="top-right" />
-          <arcgis-legend
+          {/* <arcgis-legend
             slot="bottom-right"
             autoDestroyDisabled={true}
             style={{ height: "20rem", overflow: "auto" }}
-          />
+          /> */}
         </arcgis-map>
       ) : (
         <div

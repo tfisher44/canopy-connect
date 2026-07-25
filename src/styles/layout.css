@@ -35,7 +35,7 @@
 }
 
 .runtime-shell__map-region {
-  min-height: calc(100vh - var(--header-height) - 5.5rem);
+  min-height: calc(110vh - var(--header-height) - 5.5rem);
   position: relative;
   display: flex;
   align-items: flex-end;
