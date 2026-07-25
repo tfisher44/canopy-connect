@@ -20,6 +20,9 @@ function RuntimeConsumer() {
       <button type="button" onClick={() => runtime.setReady({ mapView: null, webMap: null })}>
         Set ready
       </button>
+      <button type="button" onClick={runtime.detachMapRuntime}>
+        Detach map runtime
+      </button>
       <button type="button" onClick={() => runtime.setPointSelectionVisibilityModeEnabled(true)}>
         Enable point selection mode
       </button>
@@ -61,6 +64,10 @@ describe("MapProvider", () => {
 
     await user.click(screen.getByRole("button", { name: "Set ready" }));
     expect(screen.getByText("Status: ready")).toBeInTheDocument();
+    expect(screen.getByText("Error: none")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Detach map runtime" }));
+    expect(screen.getByText("Status: idle")).toBeInTheDocument();
     expect(screen.getByText("Error: none")).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Enable point selection mode" }));

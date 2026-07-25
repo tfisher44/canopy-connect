@@ -46,6 +46,7 @@ export function TreeStoryFlowPanel() {
     setTreeSelectionMessage,
     setNewTreePlacementEnabled,
     setPointSelectionVisibilityModeEnabled,
+    setDraftTreeLocation,
     setNewTreePlacementMessage,
     addCreatedTree,
     searchLocations,
@@ -140,6 +141,7 @@ export function TreeStoryFlowPanel() {
     setTreeSelectionEnabled(false);
     setTreeSelectionMessage(null);
     setSelectedTreeId(null);
+    setDraftTreeLocation(null);
     setNewTreePlacementEnabled(false);
     setNewTreePlacementMessage(null);
   };
@@ -169,8 +171,6 @@ export function TreeStoryFlowPanel() {
   const isSearchStep = step === "choose-path" || isLocationStep;
   const canContinueFromExistingTree = selectedTreeId !== null;
   const mapReady = status === "ready";
-  const pointSelectionVisibilityModeEnabled =
-    step === "existing-tree-location" || step === "new-tree-location";
 
   useEffect(() => {
     const trimmedQuery = locationQuery.trim();
@@ -183,14 +183,11 @@ export function TreeStoryFlowPanel() {
       setIsSearching(true);
       setSearchError(null);
       void searchLocations(trimmedQuery)
-        .then(async (results) => {
+        .then((results) => {
           if (cancelled) {
             return;
           }
           setSearchResults(results);
-          if (results.length > 0) {
-            await zoomToLocation(results[0]);
-          }
         })
         .catch((cause: unknown) => {
           if (cancelled) {
@@ -212,19 +209,26 @@ export function TreeStoryFlowPanel() {
       cancelled = true;
       window.clearTimeout(timeoutId);
     };
-  }, [isSearchStep, locationQuery, searchLocations, zoomToLocation]);
+  }, [isSearchStep, locationQuery, searchLocations]);
 
   useEffect(() => {
     setTreeSelectionEnabled(step === "existing-tree-location");
   }, [setTreeSelectionEnabled, step]);
 
   useEffect(() => {
-    setNewTreePlacementEnabled(step === "new-tree-location" || step === "new-tree-form");
+    setNewTreePlacementEnabled(
+      step === "new-tree-location" || step === "new-tree-form",
+    );
   }, [setNewTreePlacementEnabled, step]);
 
   useEffect(() => {
-    setPointSelectionVisibilityModeEnabled(pointSelectionVisibilityModeEnabled);
-  }, [pointSelectionVisibilityModeEnabled, setPointSelectionVisibilityModeEnabled]);
+    setPointSelectionVisibilityModeEnabled(true);
+    return () => {
+      setPointSelectionVisibilityModeEnabled(false);
+    };
+    // Keep imagery-only mode scoped to panel mount lifecycle.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     headingRef.current?.focus();
@@ -241,6 +245,9 @@ export function TreeStoryFlowPanel() {
   }, [mapReady, step]);
 
   const handleResultZoom = (result: LocationSearchResult) => {
+    setLocationQuery("");
+    setSearchResults([]);
+    setIsSearching(false);
     setSearchError(null);
     void zoomToLocation(result).catch((cause: unknown) => {
       const message = cause instanceof Error ? cause.message : "Unable to zoom to that location.";
@@ -264,7 +271,8 @@ export function TreeStoryFlowPanel() {
       {step === "choose-path" ? (
         <>
           <p className="muted">
-            First, search for a location to position the map. Then choose how you want to contribute.
+            First, search for a location and choose a result to position the map. Then choose how you want to
+            contribute.
           </p>
           <label className="field">
             <span>Search location</span>
@@ -373,7 +381,14 @@ export function TreeStoryFlowPanel() {
 
       {step === "new-tree-form" ? (
         <section className="stack tree-story-flow__compact-step" aria-label="Add tree flow step">
-          <p className="muted">Upload a tree image and choose alive/dead status.</p>
+          <p className="muted">
+            Upload a tree image and choose alive/dead status. You can still click the map to move the pin.
+          </p>
+          {newTreePlacementMessage ? (
+            <p className="muted" role="status" aria-live="polite">
+              {newTreePlacementMessage}
+            </p>
+          ) : null}
           {treeSubmitError ? (
             <p className="error" role="alert">
               {treeSubmitError}
