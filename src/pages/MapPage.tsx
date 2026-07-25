@@ -1,4 +1,4 @@
-import { MapPlaceholder } from "../features/map/components/MapPlaceholder";
+import { MapPlaceholder } from "../features/map/components/Map";
 
 export function MapPage() {
   return <MapPlaceholder />;

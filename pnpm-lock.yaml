@@ -11,6 +11,12 @@ importers:
       '@arcgis/core':
         specifier: ^5.1.14
         version: 5.1.14
+      '@arcgis/map-components':
+        specifier: ^5.1.14
+        version: 5.1.14(@arcgis/core@5.1.14)(@esri/calcite-components@5.1.2)
+      '@esri/calcite-components':
+        specifier: ^5.1.2
+        version: 5.1.2
       '@hookform/resolvers':
         specifier: ^5.4.0
         version: 5.4.0(react-hook-form@7.82.0(react@19.2.8))
@@ -105,6 +111,12 @@ packages:
   '@amcharts/amcharts5@5.18.0':
     resolution: {integrity: sha512-2pIka1IrHO0mnTI7A9haq8aaq8leZZhFDythxNA7qYNg/iyGWuNcuzoyzJkybJLlNSlR5crkeNqZQL5up+IF3A==}
 
+  '@arcgis/common-components@5.1.14':
+    resolution: {integrity: sha512-4HanUcrbGYX1YQO2rCbv8DEfxJC85rU37ZTs4xPuU+G7FvA1yPfdZwT3Scw4sy9xTkbD8KKjX7ZeOmT0emY5iA==}
+    peerDependencies:
+      '@arcgis/core': ^5.1.0
+      '@esri/calcite-components': ^5.1.1
+
   '@arcgis/core@5.1.14':
     resolution: {integrity: sha512-PADeK9MgN1oxcP7xK1B7Ou7efseOHzOT2dm7Hy/HqG1IXrI0FWgUrKWQ4jG+OaQT860r0V2gLFNuhZ8jM0cjiA==}
 
@@ -116,6 +128,12 @@ packages:
     peerDependenciesMeta:
       '@lit/context':
         optional: true
+
+  '@arcgis/map-components@5.1.14':
+    resolution: {integrity: sha512-sX/agAxjKPcxMD4th1+rOx0mtZMRZ6yCfEJxR/MZtX0pfjJHWLNAKewVdoOVRP9XaObLbuO70eDSmw1gdBtQjw==}
+    peerDependencies:
+      '@arcgis/core': ^5.1.0
+      '@esri/calcite-components': ^5.1.1
 
   '@arcgis/toolkit@5.1.14':
     resolution: {integrity: sha512-ojDHX/SMfGUbJwajF4VQ+zMGqlPC6OI1+yHr+YUEZGps2IOQP09C1wzPxI7YiI/jpsnOwLMJWu7vD0sOCURO5w==}
@@ -376,6 +394,9 @@ packages:
 
   '@lit/reactive-element@2.1.2':
     resolution: {integrity: sha512-pbCDiVMnne1lYUIaYNN5wrwQXDtHaYtg7YEFPeW+hws6U47WeFvISGUWekPGKWOP1ygrs0ef0o1VJMk1exos5A==}
+
+  '@lit/task@1.0.3':
+    resolution: {integrity: sha512-1gJGJl8WON+2j0y9xfcD+XsS1rvcy3XDgsIhcdUW++yTR8ESjZW6o7dn8M8a4SZM8NnJe6ynS2cKWwsbfLOurg==}
 
   '@napi-rs/wasm-runtime@1.1.6':
     resolution: {integrity: sha512-ZLv/JdUfkvOy9eCnnBaGfiO+XimbjebAeO+MRQqD/B+FR1tnRN0tpKSJHRbE8sFfS6aqsXZ67TQjfwfsxULVbg==}
@@ -1682,6 +1703,9 @@ packages:
     resolution: {integrity: sha512-iPZK6eYjbxRu3uB4/WZ3EsEIMJFMqAoopl3R+zuq0UjcAm/MO6KCweDgPfP3elTztoKP3KtnVHxTn2NHBSDVUw==}
     engines: {node: '>=10'}
 
+  lodash-es@4.18.1:
+    resolution: {integrity: sha512-J8xewKD/Gk22OZbhpOVSwcs60zhd95ESDwezOFuA3/099925PdHJ7OFHNTGtajL3AlZkykD32HykiMo+BIBI8A==}
+
   lru-cache@11.5.2:
     resolution: {integrity: sha512-4pfM1Ff0x50o0tQwb5ucw/RzNyD0/YJME6IVcStalZuMWxdt3sR3huStTtxz4PUmvZfRguvDejasvQ2kifR11g==}
     engines: {node: 20 || >=22}
@@ -2227,6 +2251,19 @@ snapshots:
       svg-arc-to-cubic-bezier: 3.2.0
       tslib: 2.8.1
 
+  '@arcgis/common-components@5.1.14(@arcgis/core@5.1.14)(@esri/calcite-components@5.1.2)':
+    dependencies:
+      '@arcgis/core': 5.1.14
+      '@arcgis/lumina': 5.1.14(lit@3.3.3)
+      '@arcgis/toolkit': 5.1.14
+      '@esri/arcgis-html-sanitizer': 4.1.0
+      '@esri/calcite-components': 5.1.2
+      '@lit/task': 1.0.3
+      lit: 3.3.3
+      tslib: 2.8.1
+    transitivePeerDependencies:
+      - '@lit/context'
+
   '@arcgis/core@5.1.14':
     dependencies:
       '@amcharts/amcharts5': 5.18.0
@@ -2247,6 +2284,20 @@ snapshots:
       csstype: 3.2.3
       lit: 3.3.3
       tslib: 2.8.1
+
+  '@arcgis/map-components@5.1.14(@arcgis/core@5.1.14)(@esri/calcite-components@5.1.2)':
+    dependencies:
+      '@amcharts/amcharts5': 5.18.0
+      '@arcgis/common-components': 5.1.14(@arcgis/core@5.1.14)(@esri/calcite-components@5.1.2)
+      '@arcgis/core': 5.1.14
+      '@arcgis/lumina': 5.1.14(lit@3.3.3)
+      '@arcgis/toolkit': 5.1.14
+      '@esri/calcite-components': 5.1.2
+      lit: 3.3.3
+      lodash-es: 4.18.1
+      tslib: 2.8.1
+    transitivePeerDependencies:
+      - '@lit/context'
 
   '@arcgis/toolkit@5.1.14':
     dependencies:
@@ -2542,6 +2593,10 @@ snapshots:
   '@lit/reactive-element@2.1.2':
     dependencies:
       '@lit-labs/ssr-dom-shim': 1.6.0
+
+  '@lit/task@1.0.3':
+    dependencies:
+      '@lit/reactive-element': 2.1.2
 
   '@napi-rs/wasm-runtime@1.1.6(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.1)':
     dependencies:
@@ -3809,6 +3864,8 @@ snapshots:
   locate-path@6.0.0:
     dependencies:
       p-locate: 5.0.0
+
+  lodash-es@4.18.1: {}
 
   lru-cache@11.5.2: {}
 

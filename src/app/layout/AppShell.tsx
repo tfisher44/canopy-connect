@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { MapPlaceholder } from "../../features/map/components/MapPlaceholder";
+import { MapPlaceholder } from "../../features/map/components/Map";
 import { useMapView } from "../../map/hooks/useMapView";
 
 export function AppShell() {
@@ -18,11 +18,6 @@ export function AppShell() {
       </header>
       <main className="runtime-shell__content">
         <section className="runtime-shell__map-region" aria-label="Map workspace">
-          <div className="runtime-shell__map-controls" aria-label="Map controls anchor">
-            <button type="button" className="button button--ghost" disabled>
-              Search anchor
-            </button>
-          </div>
           <MapPlaceholder />
         </section>
         {panelOpen ? (

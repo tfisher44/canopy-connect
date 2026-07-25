@@ -17,6 +17,8 @@
   },
   "dependencies": {
     "@arcgis/core": "^5.1.14",
+    "@arcgis/map-components": "^5.1.14",
+    "@esri/calcite-components": "^5.1.2",
     "@hookform/resolvers": "^5.4.0",
     "@radix-ui/react-label": "^2.1.13",
     "react": "^19.2.7",

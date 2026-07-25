@@ -112,17 +112,40 @@ body {
   position: relative;
 }
 
-.runtime-shell__map-controls {
-  position: absolute;
-  top: 0.75rem;
-  left: 0.75rem;
-  z-index: 2;
-}
-
 .runtime-shell__panel {
   min-width: 0;
 }
 
 .runtime-shell__panel-toggle {
   width: fit-content;
+}
+
+.map-placeholder__viewport {
+  display: block;
+  width: 100%;
+  height: min(85vh, 44rem);
+  position: relative;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  overscroll-behavior: contain;
+}
+
+.map-placeholder__viewport .esri-ui {
+  z-index: 3;
+}
+
+.map-placeholder__viewport .esri-ui-top-left,
+.map-placeholder__viewport .esri-ui-top-right {
+  position: absolute;
+  top: 0.75rem;
+  z-index: 4;
+}
+
+.map-placeholder__viewport .esri-ui-top-left {
+  left: 0.75rem;
+}
+
+.map-placeholder__viewport .esri-ui-top-right {
+  right: 0.75rem;
 }
