@@ -1,11 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import type Graphic from "@arcgis/core/Graphic";
+import esriConfig from "@arcgis/core/config";
 import type WebMap from "@arcgis/core/WebMap";
 import type MapView from "@arcgis/core/views/MapView";
 import type GraphicsLayer from "@arcgis/core/layers/GraphicsLayer";
 import type { ArcgisMap } from "@arcgis/map-components/components/arcgis-map/customElement";
+import type { ArcgisSearch } from "@arcgis/map-components/components/arcgis-search/customElement";
 import type {} from "@arcgis/map-components/types/react";
 import { useMapRuntime } from "../../../map/context/MapContext";
+
+esriConfig.apiKey = import.meta.env.ARCGIS_API_KEY;
 
 type ArcgisMapRuntimeTarget = ArcgisMap & {
   map: WebMap | null;
@@ -48,6 +52,15 @@ function getTreeIdFromGraphic(graphic: Graphic): string | null {
   }
 
   return null;
+function bindSearchToMap(mapElement: ArcgisMap, searchElement: ArcgisSearch | null): void {
+  if (!searchElement) {
+    return;
+  }
+
+  searchElement.referenceElement = mapElement;
+  if (mapElement.view) {
+    searchElement.view = mapElement.view;
+  }
 }
 
 export function MapPlaceholder() {
@@ -68,6 +81,7 @@ export function MapPlaceholder() {
     reset,
   } = useMapRuntime();
   const mapElementRef = useRef<ArcgisMap | null>(null);
+  const searchElementRef = useRef<ArcgisSearch | null>(null);
   const [componentsReady, setComponentsReady] = useState(import.meta.env.MODE === "test");
 
   useEffect(() => {
@@ -79,27 +93,14 @@ export function MapPlaceholder() {
       }
 
       try {
-        await import("@arcgis/map-components/main.css");
-      } catch {
-        const stylesheetId = "arcgis-map-components-theme";
-        if (!document.getElementById(stylesheetId)) {
-          const stylesheet = document.createElement("link");
-          stylesheet.id = stylesheetId;
-          stylesheet.rel = "stylesheet";
-          stylesheet.href = "https://js.arcgis.com/5.1/arcgis-map-components/arcgis-map-components.css";
-          document.head.appendChild(stylesheet);
-        }
-      }
-
-      try {
         await Promise.all([
           import("@arcgis/map-components/components/arcgis-map/customElement"),
           import("@arcgis/map-components/components/arcgis-layer-list/customElement"),
           import("@arcgis/map-components/components/arcgis-fullscreen/customElement"),
           import("@arcgis/map-components/components/arcgis-zoom/customElement"),
           import("@arcgis/map-components/components/arcgis-search/customElement"),
-          import("@arcgis/map-components/components/arcgis-locate/customElement"),
           import("@arcgis/map-components/components/arcgis-home/customElement"),
+          
         ]);
       } catch (cause) {
         if (isMounted) {
@@ -130,6 +131,8 @@ export function MapPlaceholder() {
       return;
     }
 
+    bindSearchToMap(mapElement, searchElementRef.current);
+
     let isMounted = true;
     setLoading();
 
@@ -149,6 +152,8 @@ export function MapPlaceholder() {
         return;
       }
 
+      bindSearchToMap(mapElement, searchElementRef.current);
+
       mapView.navigation.momentumEnabled = false;
       const boundedExtent = mapView.extent?.clone();
       if (boundedExtent) {
@@ -167,13 +172,22 @@ export function MapPlaceholder() {
       setError({ message: getErrorMessage(event), cause: event });
     };
 
+    const handleSearchReady: EventListener = () => {
+      if (!isMounted) {
+        return;
+      }
+      bindSearchToMap(mapElement, searchElementRef.current);
+    };
+
     mapElement.addEventListener("arcgisViewReadyChange", handleViewReady);
     mapElement.addEventListener("arcgisLoadError", handleLoadError);
+    searchElementRef.current?.addEventListener("arcgisReady", handleSearchReady);
 
     return () => {
       isMounted = false;
       mapElement.removeEventListener("arcgisViewReadyChange", handleViewReady);
       mapElement.removeEventListener("arcgisLoadError", handleLoadError);
+      searchElementRef.current?.removeEventListener("arcgisReady", handleSearchReady);
       reset();
     };
     // Mount/unmount lifecycle is intentional for ArcGIS component wiring.
@@ -350,13 +364,17 @@ export function MapPlaceholder() {
           className="map-placeholder__viewport"
           item-id="20712c612e0149c99d32354f089881c4"
           center={[-119.44944, 37.16611]}
-          zoom={5}
+          zoom={4}
           autoDestroyDisabled={true}
         >
-          <arcgis-search slot="top-left" />
-          <arcgis-layer-list slot="bottom-left" />
+          <arcgis-search
+            ref={searchElementRef}
+            slot="top-left"
+            autoDestroyDisabled={true}
+            className="map-placeholder__search"
+          />
+          <arcgis-layer-list slot="top-left" autoDestroyDisabled={true} className="map-placeholder__layer-list" />
           <arcgis-home slot="top-right" />
-          <arcgis-locate slot="top-right" />
           <arcgis-zoom slot="top-right" />
           <arcgis-fullscreen slot="top-right" />
         </arcgis-map>
