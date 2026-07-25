@@ -60,7 +60,6 @@ export function MapPlaceholder() {
           import("@arcgis/map-components/components/arcgis-fullscreen/customElement"),
           import("@arcgis/map-components/components/arcgis-zoom/customElement"),
           import("@arcgis/map-components/components/arcgis-search/customElement"),
-          import("@arcgis/map-components/components/arcgis-locate/customElement"),
           import("@arcgis/map-components/components/arcgis-home/customElement"),
           
         ]);
@@ -177,7 +176,6 @@ export function MapPlaceholder() {
           />
           <arcgis-layer-list slot="top-left" autoDestroyDisabled={true} className="map-placeholder__layer-list" />
           <arcgis-home slot="top-right" />
-          <arcgis-locate slot="top-right" />
           <arcgis-zoom slot="top-right" />
           <arcgis-fullscreen slot="top-right" />
         </arcgis-map>
