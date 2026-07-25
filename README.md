@@ -44,6 +44,24 @@ pnpm install
 pnpm dev
 ```
 
+## Current task status
+
+Task execution is tracked in `plans/README.md`. Reconciled status after latest full verification (`pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`):
+
+- `000-editable-map-roadmap-plan.md` — IN PROGRESS
+- `010-foundation-map-runtime-plan.md` — IN PROGRESS
+- `015-ui-theme-and-components-plan.md` — IN PROGRESS
+- `020-add-record-flow-plan.md` — BLOCKED (current repo does not include planned `features/editing` applyEdits scope)
+- `030-hardening-demo-readiness-plan.md` — BLOCKED (depends on 020)
+- `040-map-point-selection-imagery-only-plan.md` — IN PROGRESS (functional gates pass; one lint warning remains in `Map.tsx`)
+- `050-enforce-api-base-url-configuration.md` — TODO (API base URL not configured yet)
+- `060-validate-create-tree-response-contract.md` — TODO (depends on 050)
+- `070-add-intake-api-integration-tests.md` — TODO (depends on 050, 060)
+- `080-fix-map-ref-cleanup-lint-warning.md` — TODO (independent, safe to run now)
+- `090-remediate-react-router-security-advisory.md` — TODO (independent, may require router migration work)
+
+For full dependency order and status updates, see `plans/README.md`.
+
 ## Spec-driven decisions (Spec Kit)
 
 This repo is initialized with **Spec Kit** so architectural and product decisions can be tracked as specs/plans/tasks instead of ad-hoc notes.
