@@ -1,10 +1,11 @@
 import { useStory } from "../../intake/model/StoryContext";
+import { GlassPanel } from "../../../components/ui";
 
 export function MapPlaceholder() {
   const { latestStory, submittedAt } = useStory();
 
   return (
-    <section className="panel stack" aria-labelledby="map-title">
+    <GlassPanel className="stack map-placeholder" labelledBy="map-title">
       <h2 id="map-title">Map Placeholder</h2>
       <p className="muted">
         ArcGIS editable map will be wired here using your reference repos. This page intentionally
@@ -17,6 +18,6 @@ export function MapPlaceholder() {
       <div>
         <strong>Submitted at:</strong> {submittedAt ?? "N/A"}
       </div>
-    </section>
+    </GlassPanel>
   );
 }

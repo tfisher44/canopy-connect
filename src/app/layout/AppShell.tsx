@@ -1,48 +1,64 @@
 import { useState } from "react";
+import type { ReactNode } from "react";
+import { AppRibbon, GlassPanel, MatteSidebar, SidebarToggleButton } from "../../components/ui";
 import { MapPlaceholder } from "../../features/map/components/MapPlaceholder";
-import { useMapView } from "../../map/hooks/useMapView";
+import { useTheme } from "../../theme/ThemeContext";
 
-export function AppShell() {
-  const [panelOpen, setPanelOpen] = useState(false);
-  const mapRuntime = useMapView();
+type AppShellProps = {
+  panelContent?: ReactNode;
+  panelLabel?: string;
+  defaultPanelOpen?: boolean;
+};
+
+function DefaultPanelContent() {
+  return (
+    <GlassPanel className="stack">
+      <h2>Workflow Panel</h2>
+      <p className="muted">Add Story workflow will mount here in the next increment.</p>
+    </GlassPanel>
+  );
+}
+
+export function AppShell({
+  panelContent,
+  panelLabel = "Workflow panel",
+  defaultPanelOpen = false,
+}: AppShellProps) {
+  const [panelOpen, setPanelOpen] = useState(defaultPanelOpen);
+  const { theme, colorMode, options, colorModeOptions, setTheme, setColorMode } = useTheme();
+  const resolvedPanelContent = panelContent ?? <DefaultPanelContent />;
 
   return (
     <div className={`runtime-shell ${panelOpen ? "runtime-shell--panel-open" : ""}`}>
-      <header className="runtime-shell__header">
-        <h1>Canopy Connect</h1>
-        <p className="muted">Map runtime foundation for editable story intake.</p>
-        <p className="muted" aria-live="polite">
-          Runtime status: {mapRuntime.status}
-          {mapRuntime.error ? ` (${mapRuntime.error.message})` : ""}
-        </p>
-      </header>
+      <AppRibbon
+        title="Canopy Connect"
+        colorMode={colorMode}
+        activeTheme={theme}
+        themeOptions={options}
+        colorModeOptions={colorModeOptions}
+        onThemeChange={setTheme}
+        onColorModeChange={setColorMode}
+      />
       <main className="runtime-shell__content">
         <section className="runtime-shell__map-region" aria-label="Map workspace">
           <div className="runtime-shell__map-controls" aria-label="Map controls anchor">
-            <button type="button" className="button button--ghost" disabled>
+            <button type="button" className="button button--ghost button--matte" disabled>
               Search anchor
             </button>
           </div>
           <MapPlaceholder />
         </section>
         {panelOpen ? (
-          <aside id="workflow-panel" className="runtime-shell__panel" aria-label="Workflow panel">
-            <section className="panel stack">
-              <h2>Workflow Panel</h2>
-              <p className="muted">Add Story workflow will mount here in the next increment.</p>
-            </section>
-          </aside>
+          <MatteSidebar id="workflow-panel" label={panelLabel}>
+            {resolvedPanelContent}
+          </MatteSidebar>
         ) : null}
       </main>
-      <button
-        type="button"
-        className="button runtime-shell__panel-toggle"
-        onClick={() => setPanelOpen((current) => !current)}
-        aria-expanded={panelOpen}
-        aria-controls="workflow-panel"
-      >
-        {panelOpen ? "Hide panel" : "Open panel"}
-      </button>
+      <SidebarToggleButton
+        open={panelOpen}
+        controls="workflow-panel"
+        onToggle={() => setPanelOpen((current) => !current)}
+      />
     </div>
   );
 }
