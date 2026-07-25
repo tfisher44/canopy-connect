@@ -32,6 +32,9 @@ export function AppRibbon({
         </div>
         <div className="app-ribbon__meta">
           <label className="theme-switcher theme-switcher--compact" htmlFor="theme-switcher-select">
+            <span className="theme-switcher__icon" aria-hidden="true">
+              🎨
+            </span>
             <select
               id="theme-switcher-select"
               className="theme-switcher__select"
@@ -64,8 +67,14 @@ export function AppRibbon({
               aria-label="Color mode"
             >
               {colorModeOptions.map((option) => (
-                <ToggleGroup.Item key={option} className="mode-toggle__item" value={option}>
-                  {option === "dark" ? "Dark" : "Light"}
+                <ToggleGroup.Item
+                  key={option}
+                  className="mode-toggle__item"
+                  value={option}
+                  aria-label={option === "dark" ? "Dark mode" : "Light mode"}
+                  title={option === "dark" ? "Dark mode" : "Light mode"}
+                >
+                  {option === "dark" ? "☾" : "☀︎"}
                 </ToggleGroup.Item>
               ))}
             </ToggleGroup.Root>
