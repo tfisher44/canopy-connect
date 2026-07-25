@@ -70,10 +70,6 @@
   border-color: color-mix(in oklab, var(--border-neon) 62%, #7c8ea3);
 }
 
-:root[data-mode="light"] .theme-switcher__icon {
-  background: rgba(255, 255, 255, 0.95);
-}
-
 :root[data-mode="light"] .mode-toggle__item {
   color: color-mix(in oklab, var(--border-neon) 26%, #334155);
 }

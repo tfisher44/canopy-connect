@@ -4,7 +4,9 @@ import esriConfig from "@arcgis/core/config";
 import type WebMap from "@arcgis/core/WebMap";
 import type MapView from "@arcgis/core/views/MapView";
 import type GraphicsLayer from "@arcgis/core/layers/GraphicsLayer";
+import type ListItem from "@arcgis/core/widgets/LayerList/ListItem";
 import type { ArcgisMap } from "@arcgis/map-components/components/arcgis-map/customElement";
+import type { ArcgisLayerList } from "@arcgis/map-components/components/arcgis-layer-list/customElement";
 import type { ArcgisSearch } from "@arcgis/map-components/components/arcgis-search/customElement";
 import type {} from "@arcgis/map-components/types/react";
 import { useMapRuntime } from "../../../map/context/MapContext";
@@ -227,6 +229,21 @@ function bindSearchToMap(
   }
 }
 
+function configureLayerListLegendPanels(
+  layerListElement: ArcgisLayerList | null,
+): void {
+  if (!layerListElement) {
+    return;
+  }
+
+  layerListElement.listItemCreatedFunction = (event: { item: ListItem }) => {
+    event.item.panel = {
+      content: "legend",
+      open: false,
+    };
+  };
+}
+
 export function MapPlaceholder() {
   const {
     error,
@@ -249,6 +266,7 @@ export function MapPlaceholder() {
   const searchElementRef = useRef<ArcgisSearch | null>(null);
   const pointSelectionVisibilitySnapshotRef =
     useRef<PointSelectionVisibilitySnapshot | null>(null);
+  const layerListElementRef = useRef<ArcgisLayerList | null>(null);
   const [componentsReady, setComponentsReady] = useState(
     import.meta.env.MODE === "test",
   );
@@ -263,12 +281,13 @@ export function MapPlaceholder() {
 
       try {
         await Promise.all([
-          import("@arcgis/map-components/components/arcgis-map/customElement"),
-          import("@arcgis/map-components/components/arcgis-layer-list/customElement"),
-          import("@arcgis/map-components/components/arcgis-fullscreen/customElement"),
-          import("@arcgis/map-components/components/arcgis-zoom/customElement"),
-          import("@arcgis/map-components/components/arcgis-search/customElement"),
-          import("@arcgis/map-components/components/arcgis-home/customElement"),
+          import("@arcgis/map-components/components/arcgis-map"),
+          import("@arcgis/map-components/components/arcgis-layer-list"),
+          import("@arcgis/map-components/components/arcgis-fullscreen"),
+          import("@arcgis/map-components/components/arcgis-zoom"),
+          import("@arcgis/map-components/components/arcgis-search"),
+          import("@arcgis/map-components/components/arcgis-home"),
+          import("@arcgis/map-components/components/arcgis-legend"),
         ]);
       } catch (cause) {
         if (isMounted) {
@@ -300,6 +319,7 @@ export function MapPlaceholder() {
     }
 
     bindSearchToMap(mapElement, searchElementRef.current);
+    configureLayerListLegendPanels(layerListElementRef.current);
     const searchElement = searchElementRef.current;
 
     let isMounted = true;
@@ -325,6 +345,7 @@ export function MapPlaceholder() {
       }
 
       bindSearchToMap(mapElement, searchElementRef.current);
+      configureLayerListLegendPanels(layerListElementRef.current);
 
       mapView.navigation.momentumEnabled = false;
       const boundedExtent = mapView.extent?.clone();
@@ -351,15 +372,30 @@ export function MapPlaceholder() {
       bindSearchToMap(mapElement, searchElementRef.current);
     };
 
+    const handleLayerListReady: EventListener = () => {
+      if (!isMounted) {
+        return;
+      }
+      configureLayerListLegendPanels(layerListElementRef.current);
+    };
+
     mapElement.addEventListener("arcgisViewReadyChange", handleViewReady);
     mapElement.addEventListener("arcgisLoadError", handleLoadError);
     searchElement?.addEventListener("arcgisReady", handleSearchReady);
+    layerListElementRef.current?.addEventListener(
+      "arcgisReady",
+      handleLayerListReady,
+    );
 
     return () => {
       isMounted = false;
       mapElement.removeEventListener("arcgisViewReadyChange", handleViewReady);
       mapElement.removeEventListener("arcgisLoadError", handleLoadError);
       searchElement?.removeEventListener("arcgisReady", handleSearchReady);
+      layerListElementRef.current?.removeEventListener(
+        "arcgisReady",
+        handleLayerListReady,
+      );
       detachMapRuntime();
     };
     // Mount/unmount lifecycle is intentional for ArcGIS component wiring.
@@ -573,6 +609,8 @@ export function MapPlaceholder() {
           ref={mapElementRef}
           className="map-placeholder__viewport"
           item-id="20712c612e0149c99d32354f089881c4"
+          center={[-119.44944, 37.16611]}
+          zoom={5}
           autoDestroyDisabled={true}
         >
           <arcgis-search
@@ -582,6 +620,7 @@ export function MapPlaceholder() {
             className="map-placeholder__search"
           />
           <arcgis-layer-list
+            ref={layerListElementRef}
             slot="top-left"
             autoDestroyDisabled={true}
             className="map-placeholder__layer-list"

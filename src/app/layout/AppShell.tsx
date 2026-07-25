@@ -27,7 +27,6 @@ export function AppShell({
   defaultPanelOpen = false,
 }: AppShellProps) {
   const [panelOpen, setPanelOpen] = useState(defaultPanelOpen);
-  const [themeControlsOpen, setThemeControlsOpen] = useState(false);
   const themeContext: ThemeContextValue = useTheme();
   const {
     theme,
@@ -52,14 +51,7 @@ export function AppShell({
             controls="workflow-panel"
             closedLabel="Add a new Tree/Story"
             openLabel="Explore map"
-            onToggle={() =>
-              setPanelOpen((current) => {
-                if (current) {
-                  setThemeControlsOpen(false);
-                }
-                return !current;
-              })
-            }
+            onToggle={() => setPanelOpen((current) => !current)}
           />
         }
       />
@@ -72,30 +64,16 @@ export function AppShell({
         </section>
         {panelOpen ? (
           <MatteSidebar id="workflow-panel" label={panelLabel}>
-            <header className="runtime-shell__panel-header">
-              <p className="runtime-shell__panel-label muted">Settings</p>
-              <button
-                type="button"
-                className="button button--ghost runtime-shell__settings-toggle"
-                aria-label="Theme settings"
-                aria-expanded={themeControlsOpen}
-                onClick={() => setThemeControlsOpen((current) => !current)}
-              >
-                ⚙
-              </button>
-            </header>
-            {themeControlsOpen ? (
-              <div className="runtime-shell__panel-theme-controls">
-                <ThemeControls
-                  colorMode={colorMode}
-                  activeTheme={theme}
-                  themeOptions={options}
-                  colorModeOptions={colorModeOptions}
-                  onThemeChange={setTheme}
-                  onColorModeChange={setColorMode}
-                />
-              </div>
-            ) : null}
+            <div className="runtime-shell__panel-theme-controls">
+              <ThemeControls
+                colorMode={colorMode}
+                activeTheme={theme}
+                themeOptions={options}
+                colorModeOptions={colorModeOptions}
+                onThemeChange={setTheme}
+                onColorModeChange={setColorMode}
+              />
+            </div>
             {resolvedPanelContent}
           </MatteSidebar>
         ) : null}
