@@ -8,9 +8,27 @@ Minimal starter scaffold for:
 - ArcGIS SDK placeholder integration surface
 
 ## Routes
-- `/` Home
-- `/form` Story intake form (client-only state)
-- `/map` Minimal map placeholder (reference-only for now)
+- `/` Main shell view (map hero with workflow panel collapsed by default)
+- `/form` Alias route to the main shell
+- `/map` Alias route to the main shell
+- `/style-guidelines/components` Style-compliant components panel (panel open by default)
+- `*` Fallback route to the main shell
+
+## Appearance system
+- Built-in themes: Aurora, Canopy Dusk, Sunset Neon, Midnight Bloom, Ember Mist, Verdant Glow
+- Color modes: `dark` and `light`
+- Defaults: `verdant-glow` + `light`
+- Appearance state persists in `localStorage`:
+  - `canopy-connect-theme`
+  - `canopy-connect-color-mode`
+- Controls live in the fixed top ribbon:
+  - Theme dropdown
+  - Dark/Light mode toggle
+
+## UI shell structure
+- Fixed ribbon header for branding and appearance controls
+- Main map hero region as the primary canvas
+- Right-side workflow panel that can be toggled open/closed
 
 ## Scripts
 - `pnpm dev` start local dev server

@@ -1,0 +1,96 @@
+:root[data-mode="light"] .app-ribbon {
+  background:
+    linear-gradient(160deg, rgba(252, 254, 255, 0.93), rgba(244, 250, 255, 0.93)) padding-box,
+    linear-gradient(110deg, var(--border-neon), var(--border-neon-strong)) border-box;
+  box-shadow:
+    0 0.4rem 1rem rgba(17, 24, 39, 0.12),
+    0 0 0.9rem color-mix(in oklab, var(--border-neon) 28%, transparent),
+    0 0 1rem color-mix(in oklab, var(--border-neon-strong) 22%, transparent);
+}
+
+:root[data-mode="light"] .runtime-shell__map-region {
+  background:
+    radial-gradient(circle at 20% 18%, var(--hero-overlay-a), transparent 45%),
+    radial-gradient(circle at 82% 14%, var(--hero-overlay-b), transparent 44%),
+    radial-gradient(circle at 52% 88%, var(--hero-overlay-c), transparent 42%),
+    linear-gradient(125deg, rgba(243, 248, 255, 0.96), rgba(233, 243, 255, 0.96)) padding-box,
+    linear-gradient(120deg, var(--border-neon), var(--border-neon-strong)) border-box;
+  box-shadow:
+    0 1rem 2.1rem rgba(15, 23, 42, 0.14),
+    0 0 0.95rem color-mix(in oklab, var(--border-neon) 26%, transparent),
+    0 0 1.1rem color-mix(in oklab, var(--border-neon-strong) 18%, transparent);
+}
+
+:root[data-mode="light"] .button {
+  background: linear-gradient(
+    135deg,
+    color-mix(in oklab, var(--border-neon) 38%, #ffffff),
+    color-mix(in oklab, var(--border-neon-strong) 34%, #ffffff)
+  );
+  color: color-mix(in oklab, var(--border-neon-strong) 12%, #08111d);
+  border-color: color-mix(in oklab, var(--border-neon) 88%, #475569);
+  box-shadow:
+    0 0.3rem 0.75rem rgba(15, 23, 42, 0.14),
+    0 0 0.7rem color-mix(in oklab, var(--border-neon) 18%, transparent);
+}
+
+:root[data-mode="light"] .button--ghost {
+  background: color-mix(in oklab, var(--border-neon) 14%, #ffffff);
+  border-color: color-mix(in oklab, var(--border-neon) 58%, #94a3b8);
+  color: color-mix(in oklab, var(--border-neon-strong) 20%, #1f2937);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--border-neon) 20%, transparent);
+}
+
+:root[data-mode="light"] .button--neon {
+  background: linear-gradient(
+    125deg,
+    color-mix(in oklab, var(--border-neon) 30%, #ffffff),
+    color-mix(in oklab, var(--border-neon-strong) 27%, #ffffff)
+  );
+  color: color-mix(in oklab, var(--border-neon-strong) 14%, #0a1320);
+  border-color: color-mix(in oklab, var(--border-neon) 80%, #64748b);
+  box-shadow:
+    0 0 0.75rem color-mix(in oklab, var(--border-neon) 24%, transparent),
+    inset 0 0 0.35rem color-mix(in oklab, var(--border-neon-strong) 20%, transparent);
+}
+
+:root[data-mode="light"] .theme-switcher__select,
+:root[data-mode="light"] .mode-toggle {
+  background: linear-gradient(
+    140deg,
+    color-mix(in oklab, var(--border-neon) 20%, #ffffff),
+    color-mix(in oklab, var(--border-neon-strong) 18%, #ffffff)
+  );
+  color: color-mix(in oklab, var(--border-neon-strong) 18%, #0b1320);
+  border-color: color-mix(in oklab, var(--border-neon) 76%, #7c8ea3);
+}
+
+:root[data-mode="light"] .theme-switcher__icon {
+  background: rgba(255, 255, 255, 0.95);
+}
+
+:root[data-mode="light"] .mode-toggle__item {
+  color: color-mix(in oklab, var(--border-neon) 26%, #334155);
+}
+
+:root[data-mode="light"] .mode-toggle__item[data-state="on"] {
+  box-shadow: 0 0 0.4rem color-mix(in oklab, var(--border-neon) 22%, transparent);
+}
+
+:root[data-mode="light"] .button:hover:not(:disabled) {
+  border-color: color-mix(in oklab, var(--border-neon-strong) 84%, #334155);
+  box-shadow:
+    0 0.45rem 0.9rem rgba(15, 23, 42, 0.16),
+    0 0 0.8rem color-mix(in oklab, var(--border-neon-strong) 22%, transparent);
+}
+
+:root[data-mode="light"] .button:focus-visible,
+:root[data-mode="light"] .theme-switcher__select:focus,
+:root[data-mode="light"] .mode-toggle__item:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--border-neon) 82%, white 20%);
+  outline-offset: 2px;
+}
+
+:root[data-mode="light"] .style-compliant-components__row--matte {
+  background: rgba(255, 255, 255, 0.74);
+}
