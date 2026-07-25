@@ -61,18 +61,6 @@ export function AppShell({
           className="runtime-shell__map-region"
           aria-label="Map workspace"
         >
-          <div
-            className="runtime-shell__map-controls"
-            aria-label="Map controls anchor"
-          >
-            <button
-              type="button"
-              className="button button--ghost button--matte"
-              disabled
-            >
-              Search anchor
-            </button>
-          </div>
           <MapPlaceholder />
         </section>
         {panelOpen ? (

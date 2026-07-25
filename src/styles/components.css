@@ -325,6 +325,26 @@ h3 {
   height: 100%;
 }
 
+.map-placeholder__viewport arcgis-search {
+  /* Improve ArcGIS search input contrast for placeholder and typed text. */
+  --calcite-color-foreground-1: color-mix(in oklab, var(--surface-matte) 86%, white 14%);
+  --calcite-color-text-1: var(--text-primary);
+  --calcite-color-text-3: color-mix(in oklab, var(--text-primary) 64%, var(--text-muted) 36%);
+}
+
+.map-placeholder__search {
+  min-width: 20rem;
+  --calcite-color-foreground-1: #ffffff;
+  --calcite-color-foreground-2: #f8fafc;
+  --calcite-color-text-1: #0f172a;
+  --calcite-color-text-3: #334155;
+  --calcite-color-border-1: #94a3b8;
+}
+
+.map-placeholder__layer-list {
+  margin-top: 3.25rem;
+}
+
 .map-placeholder__viewport--loading {
   display: grid;
   place-items: center;
