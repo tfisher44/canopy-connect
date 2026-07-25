@@ -8,6 +8,19 @@
   --border-neon: rgba(34, 211, 238, 0.44);
   --border-neon-strong: rgba(168, 85, 247, 0.8);
   --border-muted: rgba(148, 163, 184, 0.24);
+  --control-bg-calm: linear-gradient(
+    140deg,
+    color-mix(in oklab, var(--surface-matte) 92%, #050a14),
+    color-mix(in oklab, var(--surface-glass) 84%, #081123)
+  );
+  --control-border-calm: color-mix(in oklab, var(--border-neon) 44%, var(--border-muted));
+  --control-border-accent: color-mix(in oklab, var(--border-neon-strong) 72%, white 8%);
+  --shadow-ambient: 0 0.6rem 1.3rem rgba(0, 0, 0, 0.24);
+  --glow-calm: 0 0 0.55rem color-mix(in oklab, var(--border-neon) 22%, transparent);
+  --glow-accent: 0 0 0.95rem color-mix(in oklab, var(--border-neon) 40%, transparent);
+  --glow-accent-strong: 0 0 1.2rem color-mix(in oklab, var(--border-neon-strong) 34%, transparent);
+  --focus-ring-soft: 0 0 0 2px color-mix(in oklab, var(--border-neon) 28%, transparent);
+  --focus-ring-strong: 0 0 0 4px color-mix(in oklab, var(--border-neon-strong) 24%, transparent);
   --text-primary: #e9f7ef;
   --text-muted: #9ec7b5;
   --title-color: #e6ffe6;
@@ -156,6 +169,19 @@
   --surface-glass: rgba(255, 255, 255, 0.82);
   --surface-matte: rgba(245, 249, 255, 0.92);
   --border-muted: color-mix(in oklab, var(--border-neon) 30%, #9ca3af);
+  --control-bg-calm: linear-gradient(
+    145deg,
+    color-mix(in oklab, var(--border-neon) 16%, #ffffff),
+    color-mix(in oklab, var(--border-neon-strong) 14%, #ffffff)
+  );
+  --control-border-calm: color-mix(in oklab, var(--border-neon) 50%, #9ca3af);
+  --control-border-accent: color-mix(in oklab, var(--border-neon-strong) 72%, #475569);
+  --shadow-ambient: 0 0.45rem 1rem rgba(15, 23, 42, 0.11);
+  --glow-calm: 0 0 0.5rem color-mix(in oklab, var(--border-neon) 16%, transparent);
+  --glow-accent: 0 0 0.85rem color-mix(in oklab, var(--border-neon) 28%, transparent);
+  --glow-accent-strong: 0 0 1rem color-mix(in oklab, var(--border-neon-strong) 24%, transparent);
+  --focus-ring-soft: 0 0 0 2px color-mix(in oklab, var(--border-neon) 32%, transparent);
+  --focus-ring-strong: 0 0 0 4px color-mix(in oklab, var(--border-neon-strong) 24%, transparent);
   --text-primary: color-mix(in oklab, var(--border-neon) 24%, #091018);
   --text-muted: color-mix(in oklab, var(--border-neon-strong) 14%, #475569);
   --title-color: color-mix(in oklab, var(--border-neon) 32%, #060b12);

@@ -2,10 +2,10 @@ import { useState } from "react";
 import type { ReactNode } from "react";
 import {
   AppRibbon,
-  GlassPanel,
   MatteSidebar,
   SidebarToggleButton,
 } from "../../components/ui";
+import { TreeStoryFlowPanel } from "../../features/intake/components/TreeStoryFlowPanel";
 import { MapPlaceholder } from "../../features/map/components/Map";
 import { useTheme } from "../../theme/ThemeContext";
 import type { ThemeContextValue } from "../../theme/ThemeContext";
@@ -17,14 +17,7 @@ type AppShellProps = {
 };
 
 function DefaultPanelContent() {
-  return (
-    <GlassPanel className="stack">
-      <h2>Workflow Panel</h2>
-      <p className="muted">
-        Add Story workflow will mount here in the next increment.
-      </p>
-    </GlassPanel>
-  );
+  return <TreeStoryFlowPanel />;
 }
 
 export function AppShell({
@@ -74,6 +67,7 @@ export function AppShell({
       <SidebarToggleButton
         open={panelOpen}
         controls="workflow-panel"
+        closedLabel="Add a new Tree/Story"
         onToggle={() => setPanelOpen((current) => !current)}
       />
     </div>

@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "react";
+import type Graphic from "@arcgis/core/Graphic";
 import esriConfig from "@arcgis/core/config";
 import type WebMap from "@arcgis/core/WebMap";
 import type MapView from "@arcgis/core/views/MapView";
+import type GraphicsLayer from "@arcgis/core/layers/GraphicsLayer";
 import type { ArcgisMap } from "@arcgis/map-components/components/arcgis-map/customElement";
 import type { ArcgisSearch } from "@arcgis/map-components/components/arcgis-search/customElement";
 import type {} from "@arcgis/map-components/types/react";
@@ -28,6 +30,28 @@ function getErrorMessage(cause: unknown): string {
   return "Failed to load map.";
 }
 
+const STORY_ELIGIBLE_TREE_LAYER_ID = "story-eligible-trees";
+const TREE_STORY_OVERLAY_LAYER_ID = "tree-story-workflow-overlay";
+
+function getTreeIdFromGraphic(graphic: Graphic): string | null {
+  const attributes = graphic.attributes as unknown;
+  if (!attributes || typeof attributes !== "object") {
+    return null;
+  }
+  const typedAttributes = attributes as Record<string, unknown>;
+
+  const keys = ["treeId", "tree_id", "id", "OBJECTID", "ObjectId"] as const;
+  for (const key of keys) {
+    const value = typedAttributes[key];
+    if (typeof value === "string" && value.trim().length > 0) {
+      return value;
+    }
+    if (typeof value === "number" && Number.isFinite(value)) {
+      return String(value);
+    }
+  }
+
+  return null;
 function bindSearchToMap(mapElement: ArcgisMap, searchElement: ArcgisSearch | null): void {
   if (!searchElement) {
     return;
@@ -40,7 +64,22 @@ function bindSearchToMap(mapElement: ArcgisMap, searchElement: ArcgisSearch | nu
 }
 
 export function MapPlaceholder() {
-  const { error, setLoading, setReady, setError, reset } = useMapRuntime();
+  const {
+    error,
+    mapView,
+    treeSelectionEnabled,
+    newTreePlacementEnabled,
+    draftTreeLocation,
+    createdTrees,
+    setLoading,
+    setReady,
+    setError,
+    setSelectedTreeId,
+    setTreeSelectionMessage,
+    setDraftTreeLocation,
+    setNewTreePlacementMessage,
+    reset,
+  } = useMapRuntime();
   const mapElementRef = useRef<ArcgisMap | null>(null);
   const searchElementRef = useRef<ArcgisSearch | null>(null);
   const [componentsReady, setComponentsReady] = useState(import.meta.env.MODE === "test");
@@ -154,6 +193,166 @@ export function MapPlaceholder() {
     // Mount/unmount lifecycle is intentional for ArcGIS component wiring.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [componentsReady]);
+
+  useEffect(() => {
+    if (!mapView || !treeSelectionEnabled) {
+      return;
+    }
+    const map = mapView.map;
+    if (!map) {
+      return;
+    }
+
+    const clickHandle = mapView.on("click", (event) => {
+      void (async () => {
+        const hit = await mapView.hitTest(event, {
+          include: map.layers.toArray(),
+        });
+        const graphicHit = hit.results.find(
+          (result) =>
+            "graphic" in result &&
+            result.graphic.layer?.id === STORY_ELIGIBLE_TREE_LAYER_ID &&
+            getTreeIdFromGraphic(result.graphic) !== null,
+        );
+
+        if (!graphicHit || !("graphic" in graphicHit)) {
+          setSelectedTreeId(null);
+          setTreeSelectionMessage(
+            `No story-eligible tree selected. Click a tree on layer "${STORY_ELIGIBLE_TREE_LAYER_ID}".`,
+          );
+          return;
+        }
+
+        const treeId = getTreeIdFromGraphic(graphicHit.graphic);
+        if (!treeId) {
+          setSelectedTreeId(null);
+          setTreeSelectionMessage("Selected feature is missing a valid tree id.");
+          return;
+        }
+
+        setSelectedTreeId(treeId);
+        setTreeSelectionMessage(`Selected tree ${treeId}.`);
+      })();
+    });
+
+    return () => {
+      clickHandle.remove();
+    };
+  }, [mapView, setSelectedTreeId, setTreeSelectionMessage, treeSelectionEnabled]);
+
+  useEffect(() => {
+    if (!mapView || !newTreePlacementEnabled) {
+      return;
+    }
+
+    const clickHandle = mapView.on("click", (event) => {
+      const mapPoint = event.mapPoint;
+      if (!mapPoint) {
+        setDraftTreeLocation(null);
+        setNewTreePlacementMessage("Unable to read map location from click.");
+        return;
+      }
+
+      const rawLatitude = mapPoint.latitude;
+      const rawLongitude = mapPoint.longitude;
+      if (typeof rawLatitude !== "number" || typeof rawLongitude !== "number") {
+        setDraftTreeLocation(null);
+        setNewTreePlacementMessage("Unable to read map coordinates from click.");
+        return;
+      }
+
+      const latitude = Number(rawLatitude.toFixed(6));
+      const longitude = Number(rawLongitude.toFixed(6));
+      setDraftTreeLocation({ latitude, longitude });
+      setNewTreePlacementMessage(`Tree location set to ${latitude}, ${longitude}.`);
+    });
+
+    return () => {
+      clickHandle.remove();
+    };
+  }, [mapView, newTreePlacementEnabled, setDraftTreeLocation, setNewTreePlacementMessage]);
+
+  useEffect(() => {
+    if (!mapView?.map) {
+      return;
+    }
+    const map = mapView.map;
+    let isDisposed = false;
+    let overlayLayer: GraphicsLayer | null = null;
+
+    const drawOverlay = async () => {
+      const [{ default: GraphicClass }, { default: GraphicsLayerClass }] = await Promise.all([
+        import("@arcgis/core/Graphic"),
+        import("@arcgis/core/layers/GraphicsLayer"),
+      ]);
+      if (isDisposed) {
+        return;
+      }
+
+      const existing = map.findLayerById(TREE_STORY_OVERLAY_LAYER_ID);
+      if (existing && existing.type === "graphics") {
+        overlayLayer = existing as GraphicsLayer;
+      } else {
+        overlayLayer = new GraphicsLayerClass({ id: TREE_STORY_OVERLAY_LAYER_ID });
+        map.add(overlayLayer);
+      }
+
+      overlayLayer.removeAll();
+
+      for (const tree of createdTrees) {
+        overlayLayer.add(
+          new GraphicClass({
+            geometry: {
+              type: "point",
+              latitude: tree.latitude,
+              longitude: tree.longitude,
+            },
+            symbol: {
+              type: "simple-marker",
+              style: "circle",
+              color: tree.isAlive ? "#34d399" : "#94a3b8",
+              outline: {
+                color: "#0f172a",
+                width: 1.5,
+              },
+              size: 11,
+            },
+            attributes: {
+              treeId: tree.id,
+            },
+          }),
+        );
+      }
+
+      if (draftTreeLocation) {
+        overlayLayer.add(
+          new GraphicClass({
+            geometry: {
+              type: "point",
+              latitude: draftTreeLocation.latitude,
+              longitude: draftTreeLocation.longitude,
+            },
+            symbol: {
+              type: "simple-marker",
+              style: "x",
+              color: "#38bdf8",
+              size: 13,
+              outline: {
+                color: "#082f49",
+                width: 2,
+              },
+            },
+          }),
+        );
+      }
+    };
+
+    void drawOverlay();
+
+    return () => {
+      isDisposed = true;
+    };
+  }, [createdTrees, draftTreeLocation, mapView]);
 
 
   return (

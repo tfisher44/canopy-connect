@@ -13,6 +13,7 @@ Execute in the order below unless dependencies say otherwise.
 | 003 | Improve theme/mode control discoverability and keyboard UX | P2 | S | 001 | DONE |
 | 004 | Refactor theme styling into modular token/component layers | P2 | M | 001, 002 | DONE |
 | 005 | Update docs to match live UI routes and appearance system | P3 | S | 001, 002, 003 | DONE |
+| 006 | Shift UI to calm-neon styling with focus-first emphasis | P1 | M | 004 | DONE |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (one-line reason) | REJECTED (one-line reason)
 
@@ -21,6 +22,7 @@ Status values: TODO | IN PROGRESS | DONE | BLOCKED (one-line reason) | REJECTED 
 - 002 and 003 depend on 001 because control behavior and readability need a stable ribbon/hero baseline first.
 - 004 depends on 001 and 002 to avoid modularizing unstable or low-contrast styles.
 - 005 should run after UI behavior and naming settle to avoid documentation drift.
+- 006 should run after 004 so styling adjustments operate on the modular CSS layers, not pre-modularized styling.
 
 ## Findings considered and rejected
 
