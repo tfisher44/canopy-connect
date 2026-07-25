@@ -20,9 +20,9 @@
 
 **Purpose**: Create the feature slice and shared validation assets used by all stories.
 
-- [ ] T001 Create feature slice folders and barrel exports in `src/features/style-guidelines/components/`, `src/features/style-guidelines/model/`, `src/features/style-guidelines/services/`, and `src/features/style-guidelines/__tests__/`
-- [ ] T002 [P] Create compliant/non-compliant fixture dataset in `src/features/style-guidelines/model/fixtures/componentRecords.ts` aligned to `specs/001-style-guideline-components/data-model.md`
-- [ ] T003 [P] Create feature test render helper in `src/features/style-guidelines/__tests__/testUtils.tsx` for provider/state-driven list and detail tests
+- [x] T001 Create feature slice folders and barrel exports in `src/features/style-guidelines/components/`, `src/features/style-guidelines/model/`, `src/features/style-guidelines/services/`, and `src/features/style-guidelines/__tests__/`
+- [x] T002 [P] Create compliant/non-compliant fixture dataset in `src/features/style-guidelines/model/fixtures/componentRecords.ts` aligned to `specs/001-style-guideline-components/data-model.md`
+- [x] T003 [P] Create feature test render helper in `src/features/style-guidelines/__tests__/testUtils.tsx` for provider/state-driven list and detail tests
 
 ---
 
@@ -32,12 +32,12 @@
 
 **⚠️ CRITICAL**: No user story implementation starts before this phase is complete.
 
-- [ ] T004 Define core domain types and load-state unions in `src/features/style-guidelines/model/types.ts` (ComponentRecord, StyleGuidelineCheckResult, ComplianceListViewModel)
-- [ ] T005 [P] Implement review-recency and overdue derivation helpers in `src/features/style-guidelines/model/compliance.ts`
-- [ ] T006 [P] Implement model validation schemas in `src/features/style-guidelines/model/schemas.ts` (required fields, compliant invariants, cadence rules)
-- [ ] T007 Define provider interface and result contract in `src/features/style-guidelines/services/styleComplianceCatalogProvider.ts` per `contracts/style-compliant-components-contract.md`
-- [ ] T008 Implement compliant-only filtering and deterministic ordering query in `src/features/style-guidelines/services/loadCompliantComponents.ts` (FR-002, FR-008, FR-009)
-- [ ] T009 Add contract/unit tests for filtering, ordering, and overdue derivation in `src/features/style-guidelines/__tests__/loadCompliantComponents.contract.test.ts`
+- [x] T004 Define core domain types and load-state unions in `src/features/style-guidelines/model/types.ts` (ComponentRecord, StyleGuidelineCheckResult, ComplianceListViewModel)
+- [x] T005 [P] Implement review-recency and overdue derivation helpers in `src/features/style-guidelines/model/compliance.ts`
+- [x] T006 [P] Implement model validation schemas in `src/features/style-guidelines/model/schemas.ts` (required fields, compliant invariants, cadence rules)
+- [x] T007 Define provider interface and result contract in `src/features/style-guidelines/services/styleComplianceCatalogProvider.ts` per `contracts/style-compliant-components-contract.md`
+- [x] T008 Implement compliant-only filtering and deterministic ordering query in `src/features/style-guidelines/services/loadCompliantComponents.ts` (FR-002, FR-008, FR-009)
+- [x] T009 Add contract/unit tests for filtering, ordering, and overdue derivation in `src/features/style-guidelines/__tests__/loadCompliantComponents.contract.test.ts`
 
 **Checkpoint**: Foundation complete; user stories can proceed.
 
@@ -51,17 +51,17 @@
 
 ### Tests for User Story 1
 
-- [ ] T010 [P] [US1] Create route-level render test for dedicated compliant list view in `src/features/style-guidelines/__tests__/styleCompliantComponents.route.test.tsx` (FR-001)
-- [ ] T011 [P] [US1] Create list content test for row metadata and compliant-only visibility in `src/features/style-guidelines/__tests__/styleCompliantComponents.list.test.tsx` (FR-002, FR-003, FR-009)
-- [ ] T012 [P] [US1] Create state tests for empty and error/retry transitions in `src/features/style-guidelines/__tests__/styleCompliantComponents.states.test.tsx` (FR-006, FR-007)
+- [x] T010 [P] [US1] Create route-level render test for dedicated compliant list view in `src/features/style-guidelines/__tests__/styleCompliantComponents.route.test.tsx` (FR-001)
+- [x] T011 [P] [US1] Create list content test for row metadata and compliant-only visibility in `src/features/style-guidelines/__tests__/styleCompliantComponents.list.test.tsx` (FR-002, FR-003, FR-009)
+- [x] T012 [P] [US1] Create state tests for empty and error/retry transitions in `src/features/style-guidelines/__tests__/styleCompliantComponents.states.test.tsx` (FR-006, FR-007)
 
 ### Implementation for User Story 1
 
-- [ ] T013 [US1] Add feature route wiring for style-compliant view in `src/app/App.tsx` and route fallback behavior in `src/app/layout/AppShell.tsx` (FR-001)
-- [ ] T014 [P] [US1] Implement list container with loading/ready/empty/error state handling in `src/features/style-guidelines/components/StyleCompliantComponentsView.tsx` (FR-006, FR-007)
-- [ ] T015 [P] [US1] Implement list and row presentation components in `src/features/style-guidelines/components/StyleCompliantComponentsList.tsx` and `src/features/style-guidelines/components/StyleCompliantComponentRow.tsx` (FR-003)
-- [ ] T016 [US1] Integrate provider query + retry action into list container in `src/features/style-guidelines/components/StyleCompliantComponentsView.tsx` and `src/features/style-guidelines/services/inMemoryStyleComplianceCatalogProvider.ts` (FR-002, FR-007, FR-008, FR-009)
-- [ ] T017 [US1] Add scoped list-view styles and overdue badge baseline tokens in `src/index.css` (or `src/features/style-guidelines/components/style-compliant-components.css`) for consistent scanning UX
+- [x] T013 [US1] Add feature route wiring for style-compliant view in `src/app/App.tsx` and route fallback behavior in `src/app/layout/AppShell.tsx` (FR-001)
+- [x] T014 [P] [US1] Implement list container with loading/ready/empty/error state handling in `src/features/style-guidelines/components/StyleCompliantComponentsView.tsx` (FR-006, FR-007)
+- [x] T015 [P] [US1] Implement list and row presentation components in `src/features/style-guidelines/components/StyleCompliantComponentsList.tsx` and `src/features/style-guidelines/components/StyleCompliantComponentRow.tsx` (FR-003)
+- [x] T016 [US1] Integrate provider query + retry action into list container in `src/features/style-guidelines/components/StyleCompliantComponentsView.tsx` and `src/features/style-guidelines/services/inMemoryStyleComplianceCatalogProvider.ts` (FR-002, FR-007, FR-008, FR-009)
+- [x] T017 [US1] Add scoped list-view styles and overdue badge baseline tokens in `src/index.css` (or `src/features/style-guidelines/components/style-compliant-components.css`) for consistent scanning UX
 
 **Checkpoint**: US1 is independently functional and validates FR-001, FR-002, FR-003, FR-006, FR-007, FR-008, FR-009.
 

@@ -8,11 +8,11 @@ Execute in the order below unless dependencies say otherwise.
 
 | Plan | Title | Priority | Effort | Depends on | Status |
 |------|-------|----------|--------|------------|--------|
-| 001 | Make ribbon and hero layout responsive and stable | P1 | M | — | TODO |
-| 002 | Increase control readability and contrast in light mode | P1 | S | 001 | TODO |
-| 003 | Improve theme/mode control discoverability and keyboard UX | P2 | S | 001 | TODO |
-| 004 | Refactor theme styling into modular token/component layers | P2 | M | 001, 002 | TODO |
-| 005 | Update docs to match live UI routes and appearance system | P3 | S | 001, 002, 003 | TODO |
+| 001 | Make ribbon and hero layout responsive and stable | P1 | M | — | DONE |
+| 002 | Increase control readability and contrast in light mode | P1 | S | 001 | DONE |
+| 003 | Improve theme/mode control discoverability and keyboard UX | P2 | S | 001 | DONE |
+| 004 | Refactor theme styling into modular token/component layers | P2 | M | 001, 002 | DONE |
+| 005 | Update docs to match live UI routes and appearance system | P3 | S | 001, 002, 003 | DONE |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (one-line reason) | REJECTED (one-line reason)
 
@@ -25,4 +25,3 @@ Status values: TODO | IN PROGRESS | DONE | BLOCKED (one-line reason) | REJECTED 
 ## Findings considered and rejected
 
 - None in this pass.
-

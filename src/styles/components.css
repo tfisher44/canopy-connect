@@ -146,7 +146,7 @@
   pointer-events: none;
   border-radius: 999px;
   border: 1px solid color-mix(in oklab, var(--border-neon) 58%, transparent);
-  background: rgba(255, 255, 255, 0.95);
+  background: color-mix(in oklab, var(--surface-matte) 90%, #000 10%);
 }
 
 .theme-switcher__select {
