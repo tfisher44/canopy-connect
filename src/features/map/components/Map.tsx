@@ -16,8 +16,15 @@ type ArcgisMapRuntimeTarget = ArcgisMap & {
   view: MapView | null;
 };
 
-function isArcgisMapRuntimeTarget(target: EventTarget | null): target is ArcgisMapRuntimeTarget {
-  return typeof target === "object" && target !== null && "map" in target && "view" in target;
+function isArcgisMapRuntimeTarget(
+  target: EventTarget | null,
+): target is ArcgisMapRuntimeTarget {
+  return (
+    typeof target === "object" &&
+    target !== null &&
+    "map" in target &&
+    "view" in target
+  );
 }
 
 function getErrorMessage(cause: unknown): string {
@@ -52,7 +59,12 @@ function getTreeIdFromGraphic(graphic: Graphic): string | null {
   }
 
   return null;
-function bindSearchToMap(mapElement: ArcgisMap, searchElement: ArcgisSearch | null): void {
+}
+
+function bindSearchToMap(
+  mapElement: ArcgisMap,
+  searchElement: ArcgisSearch | null,
+): void {
   if (!searchElement) {
     return;
   }
@@ -82,7 +94,9 @@ export function MapPlaceholder() {
   } = useMapRuntime();
   const mapElementRef = useRef<ArcgisMap | null>(null);
   const searchElementRef = useRef<ArcgisSearch | null>(null);
-  const [componentsReady, setComponentsReady] = useState(import.meta.env.MODE === "test");
+  const [componentsReady, setComponentsReady] = useState(
+    import.meta.env.MODE === "test",
+  );
 
   useEffect(() => {
     let isMounted = true;
@@ -100,7 +114,6 @@ export function MapPlaceholder() {
           import("@arcgis/map-components/components/arcgis-zoom/customElement"),
           import("@arcgis/map-components/components/arcgis-search/customElement"),
           import("@arcgis/map-components/components/arcgis-home/customElement"),
-          
         ]);
       } catch (cause) {
         if (isMounted) {
@@ -142,7 +155,10 @@ export function MapPlaceholder() {
       }
 
       if (!isArcgisMapRuntimeTarget(event.target)) {
-        setError({ message: "Map runtime failed to initialize.", cause: event });
+        setError({
+          message: "Map runtime failed to initialize.",
+          cause: event,
+        });
         return;
       }
 
@@ -181,13 +197,19 @@ export function MapPlaceholder() {
 
     mapElement.addEventListener("arcgisViewReadyChange", handleViewReady);
     mapElement.addEventListener("arcgisLoadError", handleLoadError);
-    searchElementRef.current?.addEventListener("arcgisReady", handleSearchReady);
+    searchElementRef.current?.addEventListener(
+      "arcgisReady",
+      handleSearchReady,
+    );
 
     return () => {
       isMounted = false;
       mapElement.removeEventListener("arcgisViewReadyChange", handleViewReady);
       mapElement.removeEventListener("arcgisLoadError", handleLoadError);
-      searchElementRef.current?.removeEventListener("arcgisReady", handleSearchReady);
+      searchElementRef.current?.removeEventListener(
+        "arcgisReady",
+        handleSearchReady,
+      );
       reset();
     };
     // Mount/unmount lifecycle is intentional for ArcGIS component wiring.
@@ -226,7 +248,9 @@ export function MapPlaceholder() {
         const treeId = getTreeIdFromGraphic(graphicHit.graphic);
         if (!treeId) {
           setSelectedTreeId(null);
-          setTreeSelectionMessage("Selected feature is missing a valid tree id.");
+          setTreeSelectionMessage(
+            "Selected feature is missing a valid tree id.",
+          );
           return;
         }
 
@@ -238,7 +262,12 @@ export function MapPlaceholder() {
     return () => {
       clickHandle.remove();
     };
-  }, [mapView, setSelectedTreeId, setTreeSelectionMessage, treeSelectionEnabled]);
+  }, [
+    mapView,
+    setSelectedTreeId,
+    setTreeSelectionMessage,
+    treeSelectionEnabled,
+  ]);
 
   useEffect(() => {
     if (!mapView || !newTreePlacementEnabled) {
@@ -257,20 +286,29 @@ export function MapPlaceholder() {
       const rawLongitude = mapPoint.longitude;
       if (typeof rawLatitude !== "number" || typeof rawLongitude !== "number") {
         setDraftTreeLocation(null);
-        setNewTreePlacementMessage("Unable to read map coordinates from click.");
+        setNewTreePlacementMessage(
+          "Unable to read map coordinates from click.",
+        );
         return;
       }
 
       const latitude = Number(rawLatitude.toFixed(6));
       const longitude = Number(rawLongitude.toFixed(6));
       setDraftTreeLocation({ latitude, longitude });
-      setNewTreePlacementMessage(`Tree location set to ${latitude}, ${longitude}.`);
+      setNewTreePlacementMessage(
+        `Tree location set to ${latitude}, ${longitude}.`,
+      );
     });
 
     return () => {
       clickHandle.remove();
     };
-  }, [mapView, newTreePlacementEnabled, setDraftTreeLocation, setNewTreePlacementMessage]);
+  }, [
+    mapView,
+    newTreePlacementEnabled,
+    setDraftTreeLocation,
+    setNewTreePlacementMessage,
+  ]);
 
   useEffect(() => {
     if (!mapView?.map) {
@@ -281,10 +319,11 @@ export function MapPlaceholder() {
     let overlayLayer: GraphicsLayer | null = null;
 
     const drawOverlay = async () => {
-      const [{ default: GraphicClass }, { default: GraphicsLayerClass }] = await Promise.all([
-        import("@arcgis/core/Graphic"),
-        import("@arcgis/core/layers/GraphicsLayer"),
-      ]);
+      const [{ default: GraphicClass }, { default: GraphicsLayerClass }] =
+        await Promise.all([
+          import("@arcgis/core/Graphic"),
+          import("@arcgis/core/layers/GraphicsLayer"),
+        ]);
       if (isDisposed) {
         return;
       }
@@ -293,7 +332,9 @@ export function MapPlaceholder() {
       if (existing && existing.type === "graphics") {
         overlayLayer = existing as GraphicsLayer;
       } else {
-        overlayLayer = new GraphicsLayerClass({ id: TREE_STORY_OVERLAY_LAYER_ID });
+        overlayLayer = new GraphicsLayerClass({
+          id: TREE_STORY_OVERLAY_LAYER_ID,
+        });
         map.add(overlayLayer);
       }
 
@@ -354,7 +395,6 @@ export function MapPlaceholder() {
     };
   }, [createdTrees, draftTreeLocation, mapView]);
 
-
   return (
     <section className="map-placeholder" aria-label="Map viewport">
       {error ? <p className="error">{error.message}</p> : null}
@@ -373,13 +413,21 @@ export function MapPlaceholder() {
             autoDestroyDisabled={true}
             className="map-placeholder__search"
           />
-          <arcgis-layer-list slot="top-left" autoDestroyDisabled={true} className="map-placeholder__layer-list" />
+          <arcgis-layer-list
+            slot="top-left"
+            autoDestroyDisabled={true}
+            className="map-placeholder__layer-list"
+          />
           <arcgis-home slot="top-right" />
           <arcgis-zoom slot="top-right" />
           <arcgis-fullscreen slot="top-right" />
         </arcgis-map>
       ) : (
-        <div className="map-placeholder__viewport map-placeholder__viewport--loading" role="status" aria-live="polite">
+        <div
+          className="map-placeholder__viewport map-placeholder__viewport--loading"
+          role="status"
+          aria-live="polite"
+        >
           Loading map…
         </div>
       )}
