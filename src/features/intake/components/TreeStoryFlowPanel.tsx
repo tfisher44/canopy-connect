@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { GlassPanel } from "../../../components/ui";
+import { useEffect, useMemo, useState } from "react";
+import type { LocationSearchResult } from "../../../map/context/MapContext";
+import { useMapRuntime } from "../../../map/context/MapContext";
 
 type TreeStoryPath = "existing-tree" | "new-tree";
 
@@ -29,12 +30,37 @@ function getHeading(step: TreeStoryFlowStep): string {
 }
 
 export function TreeStoryFlowPanel() {
+  const {
+    status,
+    selectedTreeId,
+    treeSelectionMessage,
+    setTreeSelectionEnabled,
+    searchLocations,
+    zoomToLocation,
+  } = useMapRuntime();
   const [step, setStep] = useState<TreeStoryFlowStep>("choose-path");
   const [path, setPath] = useState<TreeStoryPath | null>(null);
+  const [locationQuery, setLocationQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<LocationSearchResult[]>([]);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
+
+  const handleLocationQueryChange = (value: string) => {
+    setLocationQuery(value);
+    if (value.trim().length === 0) {
+      setSearchResults([]);
+      setSearchError(null);
+      setIsSearching(false);
+    }
+  };
 
   const resetFlow = () => {
     setPath(null);
     setStep("choose-path");
+    setLocationQuery("");
+    setSearchResults([]);
+    setSearchError(null);
+    setTreeSelectionEnabled(false);
   };
 
   const goBack = () => {
@@ -57,8 +83,77 @@ export function TreeStoryFlowPanel() {
     }
   };
 
+  const isLocationStep = step === "existing-tree-location" || step === "new-tree-location";
+  const isSearchStep = step === "choose-path" || isLocationStep;
+  const canContinueFromExistingTree = selectedTreeId !== null;
+  const mapReady = status === "ready";
+
+  useEffect(() => {
+    const trimmedQuery = locationQuery.trim();
+    if (!isSearchStep || !trimmedQuery) {
+      return;
+    }
+
+    let cancelled = false;
+    const timeoutId = window.setTimeout(() => {
+      setIsSearching(true);
+      setSearchError(null);
+      void searchLocations(trimmedQuery)
+        .then(async (results) => {
+          if (cancelled) {
+            return;
+          }
+          setSearchResults(results);
+          if (results.length > 0) {
+            await zoomToLocation(results[0]);
+          }
+        })
+        .catch((cause: unknown) => {
+          if (cancelled) {
+            return;
+          }
+          const message =
+            cause instanceof Error ? cause.message : "Location search failed. Please try again.";
+          setSearchError(message);
+          setSearchResults([]);
+        })
+        .finally(() => {
+          if (!cancelled) {
+            setIsSearching(false);
+          }
+        });
+    }, 400);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
+    };
+  }, [isSearchStep, locationQuery, searchLocations, zoomToLocation]);
+
+  useEffect(() => {
+    setTreeSelectionEnabled(step === "existing-tree-location");
+  }, [setTreeSelectionEnabled, step]);
+
+  const locationStepHint = useMemo(() => {
+    if (!mapReady) {
+      return "Map is still loading. Search and selection will be available once the map is ready.";
+    }
+    if (step === "existing-tree-location") {
+      return "Now click a story-eligible tree on the map to continue.";
+    }
+    return "Location is set. Continue when ready to add the tree details.";
+  }, [mapReady, step]);
+
+  const handleResultZoom = (result: LocationSearchResult) => {
+    setSearchError(null);
+    void zoomToLocation(result).catch((cause: unknown) => {
+      const message = cause instanceof Error ? cause.message : "Unable to zoom to that location.";
+      setSearchError(message);
+    });
+  };
+
   return (
-    <GlassPanel className="stack tree-story-flow" labelledBy="tree-story-flow-title">
+    <section className="stack tree-story-flow" aria-labelledby="tree-story-flow-title">
       <header className="tree-story-flow__header">
         <h2 id="tree-story-flow-title">{getHeading(step)}</h2>
         {step !== "choose-path" ? (
@@ -71,9 +166,40 @@ export function TreeStoryFlowPanel() {
       {step === "choose-path" ? (
         <>
           <p className="muted">
-            Choose how you want to contribute: add a story to an existing tree or add a new tree and
-            story.
+            First, search for a location to position the map. Then choose how you want to contribute.
           </p>
+          <label className="field">
+            <span>Search location</span>
+            <input
+              className="tree-story-flow__search-input"
+              type="search"
+              value={locationQuery}
+              onChange={(event) => handleLocationQueryChange(event.target.value)}
+              placeholder="Start typing an address or place"
+              disabled={!mapReady}
+            />
+          </label>
+          {isSearching ? <p className="muted">Searching locations…</p> : null}
+          {searchError ? (
+            <p className="error" role="alert">
+              {searchError}
+            </p>
+          ) : null}
+          {searchResults.length > 0 ? (
+            <ul className="tree-story-flow__search-results" aria-label="Location search results">
+              {searchResults.map((result) => (
+                <li key={result.id}>
+                  <button
+                    type="button"
+                    className="button button--ghost"
+                    onClick={() => handleResultZoom(result)}
+                  >
+                    {result.label}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : null}
           <div className="tree-story-flow__option-grid">
             <button
               type="button"
@@ -101,14 +227,18 @@ export function TreeStoryFlowPanel() {
 
       {step === "existing-tree-location" ? (
         <section className="stack" aria-label="Existing tree flow step">
-          <p className="muted">
-            Location search and map tree selection will be connected in the next phase.
-          </p>
+          <p className="muted">{locationStepHint}</p>
+          {treeSelectionMessage ? <p className="muted">{treeSelectionMessage}</p> : null}
           <div className="tree-story-flow__actions">
             <button type="button" className="button button--ghost" onClick={goBack}>
               Back
             </button>
-            <button type="button" className="button" onClick={() => setStep("story-form")}>
+            <button
+              type="button"
+              className="button"
+              onClick={() => setStep("story-form")}
+              disabled={!canContinueFromExistingTree}
+            >
               Continue to story form
             </button>
           </div>
@@ -117,9 +247,7 @@ export function TreeStoryFlowPanel() {
 
       {step === "new-tree-location" ? (
         <section className="stack" aria-label="New tree location flow step">
-          <p className="muted">
-            Location search and map marker placement will be added in Phase 2.
-          </p>
+          <p className="muted">{locationStepHint}</p>
           <div className="tree-story-flow__actions">
             <button type="button" className="button button--ghost" onClick={goBack}>
               Back
@@ -174,6 +302,6 @@ export function TreeStoryFlowPanel() {
           </div>
         </section>
       ) : null}
-    </GlassPanel>
+    </section>
   );
 }

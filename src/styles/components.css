@@ -339,6 +339,10 @@ h3 {
   gap: 0.75rem;
 }
 
+.tree-story-flow {
+  padding: 0.85rem;
+}
+
 .tree-story-flow__header h2 {
   margin: 0;
 }
@@ -356,4 +360,35 @@ h3 {
   display: flex;
   flex-wrap: wrap;
   gap: 0.6rem;
+}
+
+.tree-story-flow__search-input {
+  width: 100%;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border-muted);
+  background: color-mix(in oklab, var(--surface-matte) 92%, #000 8%);
+  color: var(--text-primary);
+  font: inherit;
+  padding: 0.6rem 0.7rem;
+}
+
+.tree-story-flow__search-input:focus-visible {
+  outline: none;
+  border-color: color-mix(in oklab, var(--border-neon) 82%, white 8%);
+  box-shadow:
+    0 0 0 2px color-mix(in oklab, var(--border-neon) 28%, transparent),
+    0 0 0 4px color-mix(in oklab, var(--border-neon-strong) 24%, transparent);
+}
+
+.tree-story-flow__search-results {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.tree-story-flow__search-results .button {
+  width: 100%;
+  text-align: left;
 }

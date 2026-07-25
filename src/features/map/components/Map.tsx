@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import type Graphic from "@arcgis/core/Graphic";
 import type WebMap from "@arcgis/core/WebMap";
 import type MapView from "@arcgis/core/views/MapView";
 import type { ArcgisMap } from "@arcgis/map-components/components/arcgis-map/customElement";
@@ -24,8 +25,41 @@ function getErrorMessage(cause: unknown): string {
   return "Failed to load map.";
 }
 
+const STORY_ELIGIBLE_TREE_LAYER_ID = "story-eligible-trees";
+
+function getTreeIdFromGraphic(graphic: Graphic): string | null {
+  const attributes = graphic.attributes as unknown;
+  if (!attributes || typeof attributes !== "object") {
+    return null;
+  }
+  const typedAttributes = attributes as Record<string, unknown>;
+
+  const keys = ["treeId", "tree_id", "id", "OBJECTID", "ObjectId"] as const;
+  for (const key of keys) {
+    const value = typedAttributes[key];
+    if (typeof value === "string" && value.trim().length > 0) {
+      return value;
+    }
+    if (typeof value === "number" && Number.isFinite(value)) {
+      return String(value);
+    }
+  }
+
+  return null;
+}
+
 export function MapPlaceholder() {
-  const { error, setLoading, setReady, setError, reset } = useMapRuntime();
+  const {
+    error,
+    mapView,
+    treeSelectionEnabled,
+    setLoading,
+    setReady,
+    setError,
+    setSelectedTreeId,
+    setTreeSelectionMessage,
+    reset,
+  } = useMapRuntime();
   const mapElementRef = useRef<ArcgisMap | null>(null);
   const [componentsReady, setComponentsReady] = useState(import.meta.env.MODE === "test");
 
@@ -138,6 +172,52 @@ export function MapPlaceholder() {
     // Mount/unmount lifecycle is intentional for ArcGIS component wiring.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [componentsReady]);
+
+  useEffect(() => {
+    if (!mapView || !treeSelectionEnabled) {
+      return;
+    }
+    const map = mapView.map;
+    if (!map) {
+      return;
+    }
+
+    const clickHandle = mapView.on("click", (event) => {
+      void (async () => {
+        const hit = await mapView.hitTest(event, {
+          include: map.layers.toArray(),
+        });
+        const graphicHit = hit.results.find(
+          (result) =>
+            "graphic" in result &&
+            result.graphic.layer?.id === STORY_ELIGIBLE_TREE_LAYER_ID &&
+            getTreeIdFromGraphic(result.graphic) !== null,
+        );
+
+        if (!graphicHit || !("graphic" in graphicHit)) {
+          setSelectedTreeId(null);
+          setTreeSelectionMessage(
+            `No story-eligible tree selected. Click a tree on layer "${STORY_ELIGIBLE_TREE_LAYER_ID}".`,
+          );
+          return;
+        }
+
+        const treeId = getTreeIdFromGraphic(graphicHit.graphic);
+        if (!treeId) {
+          setSelectedTreeId(null);
+          setTreeSelectionMessage("Selected feature is missing a valid tree id.");
+          return;
+        }
+
+        setSelectedTreeId(treeId);
+        setTreeSelectionMessage(`Selected tree ${treeId}.`);
+      })();
+    });
+
+    return () => {
+      clickHandle.remove();
+    };
+  }, [mapView, setSelectedTreeId, setTreeSelectionMessage, treeSelectionEnabled]);
 
 
   return (
