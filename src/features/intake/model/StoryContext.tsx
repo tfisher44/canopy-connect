@@ -29,6 +29,7 @@ export function StoryProvider({ children }: PropsWithChildren) {
   return <StoryContext.Provider value={value}>{children}</StoryContext.Provider>;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useStory() {
   const context = useContext(StoryContext);
   if (!context) {
