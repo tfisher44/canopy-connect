@@ -111,12 +111,13 @@ export function MapPlaceholder() {
 
       try {
         await Promise.all([
-          import("@arcgis/map-components/components/arcgis-map/customElement"),
-          import("@arcgis/map-components/components/arcgis-layer-list/customElement"),
-          import("@arcgis/map-components/components/arcgis-fullscreen/customElement"),
-          import("@arcgis/map-components/components/arcgis-zoom/customElement"),
-          import("@arcgis/map-components/components/arcgis-search/customElement"),
-          import("@arcgis/map-components/components/arcgis-home/customElement"),
+          import("@arcgis/map-components/components/arcgis-map"),
+          import("@arcgis/map-components/components/arcgis-layer-list"),
+          import("@arcgis/map-components/components/arcgis-fullscreen"),
+          import("@arcgis/map-components/components/arcgis-zoom"),
+          import("@arcgis/map-components/components/arcgis-search"),
+          import("@arcgis/map-components/components/arcgis-home"),
+          import("@arcgis/map-components/components/arcgis-legend")
         ]);
       } catch (cause) {
         if (isMounted) {
@@ -424,6 +425,11 @@ export function MapPlaceholder() {
           <arcgis-home slot="top-right" />
           <arcgis-zoom slot="top-right" />
           <arcgis-fullscreen slot="top-right" />
+          <arcgis-legend
+            slot="bottom-right"
+            autoDestroyDisabled={true}
+            style={{ height: "20rem", overflow: "auto" }}
+          />
         </arcgis-map>
       ) : (
         <div
