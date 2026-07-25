@@ -6,6 +6,7 @@ import type MapView from "@arcgis/core/views/MapView";
 import type GraphicsLayer from "@arcgis/core/layers/GraphicsLayer";
 import type ListItem from "@arcgis/core/widgets/LayerList/ListItem";
 import type { ArcgisMap } from "@arcgis/map-components/components/arcgis-map/customElement";
+import type { ArcgisHome } from "@arcgis/map-components/components/arcgis-home/customElement";
 import type { ArcgisLayerList } from "@arcgis/map-components/components/arcgis-layer-list/customElement";
 import type { ArcgisSearch } from "@arcgis/map-components/components/arcgis-search/customElement";
 import type {} from "@arcgis/map-components/types/react";
@@ -69,6 +70,11 @@ const TREE_STORY_OVERLAY_LAYER_ID = "tree-story-workflow-overlay";
 const IMAGERY_KEYWORDS = ["imagery", "satellite", "aerial", "ortho"];
 const DRAFT_TREE_MARKER_ICON_URL =
   "https://img.icons8.com/isometric/100/deciduous-tree.png";
+const DEFAULT_ZOOM_LEVEL = 5;
+const DEFAULT_CENTER = {
+  latitude: 37.16611,
+  longitude: -119.44944,
+};
 
 function getBasemapLayers(mapView: MapView): LayerWithVisibility[] {
   const baseLayers = mapView.map?.basemap?.baseLayers?.toArray() ?? [];
@@ -267,6 +273,7 @@ export function MapPlaceholder() {
   const pointSelectionVisibilitySnapshotRef =
     useRef<PointSelectionVisibilitySnapshot | null>(null);
   const layerListElementRef = useRef<ArcgisLayerList | null>(null);
+  const homeElementRef = useRef<ArcgisHome | null>(null);
   const [componentsReady, setComponentsReady] = useState(
     import.meta.env.MODE === "test",
   );
@@ -348,15 +355,10 @@ export function MapPlaceholder() {
       configureLayerListLegendPanels(layerListElementRef.current);
 
       mapView.navigation.momentumEnabled = false;
-      const boundedExtent = mapView.extent?.clone();
-      if (boundedExtent) {
-        boundedExtent.expand(2);
-        mapView.constraints = {
-          ...mapView.constraints,
-          geometry: boundedExtent,
-          rotationEnabled: false,
-        };
-      }
+      mapView.constraints = {
+        ...mapView.constraints,
+        rotationEnabled: false,
+      };
 
       setReady({ webMap, mapView });
     };
@@ -495,6 +497,38 @@ export function MapPlaceholder() {
   ]);
 
   useEffect(() => {
+    if (!mapView) {
+      return;
+    }
+
+    let isDisposed = false;
+
+    const syncInitialAndHomeZoom = async () => {
+      await mapView.goTo(
+        {
+          center: [DEFAULT_CENTER.longitude, DEFAULT_CENTER.latitude],
+          zoom: DEFAULT_ZOOM_LEVEL,
+        },
+        { animate: false },
+      );
+      if (isDisposed) {
+        return;
+      }
+
+      const homeElement = homeElementRef.current;
+      if (homeElement) {
+        homeElement.viewpoint = mapView.viewpoint.clone();
+      }
+    };
+
+    void syncInitialAndHomeZoom();
+
+    return () => {
+      isDisposed = true;
+    };
+  }, [mapView]);
+
+  useEffect(() => {
     if (!mapView || !mapView.map || !pointSelectionVisibilityModeEnabled) {
       const snapshot = pointSelectionVisibilitySnapshotRef.current;
       if (snapshot && snapshot.mapView === mapView) {
@@ -623,7 +657,7 @@ export function MapPlaceholder() {
             autoDestroyDisabled={true}
             className="map-placeholder__layer-list"
           />
-          <arcgis-home slot="top-right" />
+          <arcgis-home ref={homeElementRef} slot="top-right" />
           <arcgis-zoom slot="top-right" />
           <arcgis-fullscreen slot="top-right" />
         </arcgis-map>
