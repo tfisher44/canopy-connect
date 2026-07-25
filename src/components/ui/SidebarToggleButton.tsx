@@ -2,9 +2,17 @@ type SidebarToggleButtonProps = {
   open: boolean;
   onToggle: () => void;
   controls: string;
+  closedLabel?: string;
+  openLabel?: string;
 };
 
-export function SidebarToggleButton({ open, onToggle, controls }: SidebarToggleButtonProps) {
+export function SidebarToggleButton({
+  open,
+  onToggle,
+  controls,
+  closedLabel = "Open panel",
+  openLabel = "Hide panel",
+}: SidebarToggleButtonProps) {
   return (
     <button
       type="button"
@@ -13,8 +21,7 @@ export function SidebarToggleButton({ open, onToggle, controls }: SidebarToggleB
       aria-expanded={open}
       aria-controls={controls}
     >
-      {open ? "Hide panel" : "Open panel"}
+      {open ? openLabel : closedLabel}
     </button>
   );
 }
-
