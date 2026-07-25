@@ -45,6 +45,7 @@ export function TreeStoryFlowPanel() {
     setSelectedTreeId,
     setTreeSelectionMessage,
     setNewTreePlacementEnabled,
+    setPointSelectionVisibilityModeEnabled,
     setNewTreePlacementMessage,
     addCreatedTree,
     searchLocations,
@@ -168,6 +169,8 @@ export function TreeStoryFlowPanel() {
   const isSearchStep = step === "choose-path" || isLocationStep;
   const canContinueFromExistingTree = selectedTreeId !== null;
   const mapReady = status === "ready";
+  const pointSelectionVisibilityModeEnabled =
+    step === "existing-tree-location" || step === "new-tree-location";
 
   useEffect(() => {
     const trimmedQuery = locationQuery.trim();
@@ -218,6 +221,10 @@ export function TreeStoryFlowPanel() {
   useEffect(() => {
     setNewTreePlacementEnabled(step === "new-tree-location" || step === "new-tree-form");
   }, [setNewTreePlacementEnabled, step]);
+
+  useEffect(() => {
+    setPointSelectionVisibilityModeEnabled(pointSelectionVisibilityModeEnabled);
+  }, [pointSelectionVisibilityModeEnabled, setPointSelectionVisibilityModeEnabled]);
 
   useEffect(() => {
     headingRef.current?.focus();
