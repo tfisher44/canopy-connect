@@ -1,7 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AddTreeForm } from "../../../components/add-tree-form";
-import type { AddTreeFormValues } from "../schema";
+import { AddStoryForm } from "../../../components/add-story-form";
+import type { AddStoryFormValues, AddTreeFormValues } from "../schema";
 import { createTree } from "../services/treeService";
+import { createStory } from "../services/storyService";
 import type { LocationSearchResult } from "../../../map/context/MapContext";
 import { useMapRuntime } from "../../../map/context/MapContext";
 
@@ -56,6 +58,10 @@ export function TreeStoryFlowPanel() {
   const [isSearching, setIsSearching] = useState(false);
   const [treeSubmitError, setTreeSubmitError] = useState<string | null>(null);
   const [treeSubmitting, setTreeSubmitting] = useState(false);
+  const [storySubmitError, setStorySubmitError] = useState<string | null>(null);
+  const [storySubmitting, setStorySubmitting] = useState(false);
+  const [submittedStoryId, setSubmittedStoryId] = useState<string | null>(null);
+  const headingRef = useRef<HTMLHeadingElement | null>(null);
 
   const handleLocationQueryChange = (value: string) => {
     setLocationQuery(value);
@@ -94,6 +100,33 @@ export function TreeStoryFlowPanel() {
     }
   };
 
+  const handleAddStorySubmit = async (values: AddStoryFormValues) => {
+    if (!selectedTreeId) {
+      setStorySubmitError("Select or create a tree before adding a story.");
+      return;
+    }
+
+    setStorySubmitError(null);
+    setStorySubmitting(true);
+    try {
+      const createdStory = await createStory({
+        treeId: selectedTreeId,
+        title: values.title,
+        details: values.details,
+        name: values.name || undefined,
+        email: values.email || undefined,
+        imageFiles: values.imageFiles,
+      });
+      setSubmittedStoryId(createdStory.id);
+      setStep("success");
+    } catch (cause) {
+      const message = cause instanceof Error ? cause.message : "Failed to add story.";
+      setStorySubmitError(message);
+    } finally {
+      setStorySubmitting(false);
+    }
+  };
+
   const resetFlow = () => {
     setPath(null);
     setStep("choose-path");
@@ -101,6 +134,8 @@ export function TreeStoryFlowPanel() {
     setSearchResults([]);
     setSearchError(null);
     setTreeSubmitError(null);
+    setStorySubmitError(null);
+    setSubmittedStoryId(null);
     setTreeSelectionEnabled(false);
     setTreeSelectionMessage(null);
     setSelectedTreeId(null);
@@ -120,6 +155,7 @@ export function TreeStoryFlowPanel() {
         setStep("new-tree-location");
         return;
       case "story-form":
+        setStorySubmitError(null);
         setStep(path === "new-tree" ? "new-tree-form" : "existing-tree-location");
         return;
       case "success":
@@ -183,6 +219,10 @@ export function TreeStoryFlowPanel() {
     setNewTreePlacementEnabled(step === "new-tree-location" || step === "new-tree-form");
   }, [setNewTreePlacementEnabled, step]);
 
+  useEffect(() => {
+    headingRef.current?.focus();
+  }, [step]);
+
   const locationStepHint = useMemo(() => {
     if (!mapReady) {
       return "Map is still loading. Search and selection will be available once the map is ready.";
@@ -204,7 +244,9 @@ export function TreeStoryFlowPanel() {
   return (
     <section className="stack tree-story-flow" aria-labelledby="tree-story-flow-title">
       <header className="tree-story-flow__header">
-        <h2 id="tree-story-flow-title">{getHeading(step)}</h2>
+        <h2 id="tree-story-flow-title" ref={headingRef} tabIndex={-1}>
+          {getHeading(step)}
+        </h2>
         {step !== "choose-path" ? (
           <button type="button" className="button button--ghost" onClick={resetFlow}>
             Start over
@@ -277,7 +319,11 @@ export function TreeStoryFlowPanel() {
       {step === "existing-tree-location" ? (
         <section className="stack" aria-label="Existing tree flow step">
           <p className="muted">{locationStepHint}</p>
-          {treeSelectionMessage ? <p className="muted">{treeSelectionMessage}</p> : null}
+          {treeSelectionMessage ? (
+            <p className="muted" role="status" aria-live="polite">
+              {treeSelectionMessage}
+            </p>
+          ) : null}
           <div className="tree-story-flow__actions">
             <button type="button" className="button button--ghost" onClick={goBack}>
               Back
@@ -297,7 +343,11 @@ export function TreeStoryFlowPanel() {
       {step === "new-tree-location" ? (
         <section className="stack" aria-label="New tree location flow step">
           <p className="muted">{locationStepHint}</p>
-          {newTreePlacementMessage ? <p className="muted">{newTreePlacementMessage}</p> : null}
+          {newTreePlacementMessage ? (
+            <p className="muted" role="status" aria-live="polite">
+              {newTreePlacementMessage}
+            </p>
+          ) : null}
           <div className="tree-story-flow__actions">
             <button type="button" className="button button--ghost" onClick={goBack}>
               Back
@@ -340,17 +390,23 @@ export function TreeStoryFlowPanel() {
       ) : null}
 
       {step === "story-form" ? (
-        <section className="stack" aria-label="Add story flow step">
-          <p className="muted">
-            Story title, images, details, and optional name/email fields will be implemented in
-            Phase 4.
-          </p>
+        <section className="stack tree-story-flow__compact-step" aria-label="Add story flow step">
+          <p className="muted">Add your story details and submit.</p>
+          {storySubmitError ? (
+            <p className="error" role="alert">
+              {storySubmitError}
+            </p>
+          ) : null}
+          {selectedTreeId ? (
+            <AddStoryForm treeId={selectedTreeId} submitting={storySubmitting} onSubmit={handleAddStorySubmit} />
+          ) : (
+            <p className="error" role="alert">
+              No selected tree found. Go back and select or create a tree first.
+            </p>
+          )}
           <div className="tree-story-flow__actions">
             <button type="button" className="button button--ghost" onClick={goBack}>
               Back
-            </button>
-            <button type="button" className="button" onClick={() => setStep("success")}>
-              Finish flow setup
             </button>
           </div>
         </section>
@@ -358,10 +414,14 @@ export function TreeStoryFlowPanel() {
 
       {step === "success" ? (
         <section className="stack" aria-label="Flow setup complete">
-          <p className="muted">
-            The phased panel flow is wired and ready for map search and form implementation.
+          <p className="muted" role="status" aria-live="polite">
+            Your tree story was submitted successfully.
           </p>
+          {submittedStoryId ? <p className="muted">Story ID: {submittedStoryId}</p> : null}
           <div className="tree-story-flow__actions">
+            <button type="button" className="button" onClick={resetFlow}>
+              Add another Tree/Story
+            </button>
             <button type="button" className="button button--ghost" onClick={goBack}>
               Back
             </button>

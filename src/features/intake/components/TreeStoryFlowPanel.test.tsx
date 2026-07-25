@@ -22,8 +22,10 @@ describe("TreeStoryFlowPanel", () => {
     const user = userEvent.setup();
     renderWithProviders();
 
+    expect(screen.getByRole("searchbox", { name: "Search location" })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Select existing tree to add story" }));
     expect(screen.getByRole("heading", { name: "Select existing tree" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Select existing tree" })).toHaveFocus();
     expect(screen.getByRole("button", { name: "Continue to story form" })).toBeDisabled();
 
     await user.click(screen.getByRole("button", { name: "Back" }));
