@@ -6,6 +6,7 @@
 ## Overview
 Establish the application shell, map lifecycle boundaries, env validation, layer resolution, and runtime schema discovery.  
 Outcome: a stable map runtime that can safely power editing features in the next increment.
+This increment also sets the **single-page layout contract** needed for a 75% map / 25% form split when Add Story is open.
 
 ## Prerequisites
 - `@arcgis/core` already installed
@@ -17,16 +18,22 @@ Outcome: a stable map runtime that can safely power editing features in the next
 **Demo/Validation**:
 - App shell displays map area and right-panel placeholder
 - Map loading state visible in UI
+- Shell supports a single-page two-column mode that can switch to `3fr 1fr`
+- Header ribbon is visible with app title
+- Top-left search slot/anchor is present for location zoom
+- Right panel is collapsible (hidden by default, opened by workflow)
 
 ### Task 1.1: Create app shell layout regions
 - **Location**:
   - `src/app/App.tsx`
   - `src/app/layout/AppShell.tsx`
-- **Description**: Implement layout regions for map canvas, control area, and workflow panel.
+- **Description**: Implement layout regions for full-page map canvas, title ribbon, top-left control anchor, and hidable workflow panel.
 - **Dependencies**: none
 - **Acceptance Criteria**:
   - Layout regions render consistently on desktop viewport
   - App remains routing-safe for future routes
+  - Layout supports a toggled `map:panel = 3:1` split without route/page navigation
+  - Default state keeps panel collapsed while map spans full width
 - **Validation**:
   - Manual check in `pnpm dev`
 
@@ -111,4 +118,3 @@ Outcome: a stable map runtime that can safely power editing features in the next
 ## Rollback Plan
 - Keep shell and context changes isolated from editing feature code
 - Revert Sprint 3 first, then Sprint 2, then Sprint 1 if needed
-

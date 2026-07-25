@@ -14,6 +14,7 @@ Harden the add-record experience for repeatable demos and reliable handoff: map 
 **Goal**: Ensure add mode enters/exits cleanly without persistent side effects.
 **Demo/Validation**:
 - Repeated enter/cancel/submit cycles preserve expected map state
+- Form-open mode consistently preserves `3fr 1fr` split on desktop
 
 ### Task 1.1: Implement map mode controller
 - **Location**:
@@ -72,6 +73,7 @@ Harden the add-record experience for repeatable demos and reliable handoff: map 
 - **Acceptance Criteria**:
   - Covers success, failure, and cancel flows
   - Stable in CI/local execution
+  - Verifies layout switches to 75% map / 25% form when form is open
 - **Validation**:
   - `pnpm test`
 
@@ -83,6 +85,8 @@ Harden the add-record experience for repeatable demos and reliable handoff: map 
 - **Dependencies**: Task 3.1
 - **Acceptance Criteria**:
   - New developer can run app and complete add-record demo with docs only
+  - Docs include single-page layout behavior (full-map idle, 75/25 split when Add Story opens)
+  - Docs include theme/component guidance for dark glassmorphic matte UI classes
 - **Validation**:
   - Fresh setup walkthrough
 
@@ -100,4 +104,3 @@ Harden the add-record experience for repeatable demos and reliable handoff: map 
 ## Rollback Plan
 - Revert hardening increment independently while keeping add-flow core intact
 - Disable advanced feedback/map effects if they regress demo stability
-
