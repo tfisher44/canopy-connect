@@ -9,7 +9,10 @@ import type { ArcgisSearch } from "@arcgis/map-components/components/arcgis-sear
 import type {} from "@arcgis/map-components/types/react";
 import { useMapRuntime } from "../../../map/context/MapContext";
 
-esriConfig.apiKey = import.meta.env.ARCGIS_API_KEY;
+const arcgisApiKey = import.meta.env.ARCGIS_API_KEY;
+if (typeof arcgisApiKey === "string" && arcgisApiKey.trim().length > 0) {
+  esriConfig.apiKey = arcgisApiKey;
+}
 
 type ArcgisMapRuntimeTarget = ArcgisMap & {
   map: WebMap | null;
