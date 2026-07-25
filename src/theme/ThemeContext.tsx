@@ -5,7 +5,7 @@ import type { ColorMode, ThemeName } from "./themes";
 const THEME_STORAGE_KEY = "canopy-connect-theme";
 const COLOR_MODE_STORAGE_KEY = "canopy-connect-color-mode";
 
-type ThemeContextValue = {
+export type ThemeContextValue = {
   theme: ThemeName;
   colorMode: ColorMode;
   setTheme: (theme: ThemeName) => void;
@@ -72,7 +72,7 @@ export function ThemeProvider({ children }: PropsWithChildren) {
 }
 
 // eslint-disable-next-line react-refresh/only-export-components
-export function useTheme() {
+export function useTheme(): ThemeContextValue {
   const context = useContext(ThemeContext);
   if (!context) {
     throw new Error("useTheme must be used within ThemeProvider.");

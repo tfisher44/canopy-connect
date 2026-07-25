@@ -8,6 +8,7 @@ import {
 } from "../../components/ui";
 import { MapPlaceholder } from "../../features/map/components/Map";
 import { useTheme } from "../../theme/ThemeContext";
+import type { ThemeContextValue } from "../../theme/ThemeContext";
 
 type AppShellProps = {
   panelContent?: ReactNode;
@@ -32,6 +33,7 @@ export function AppShell({
   defaultPanelOpen = false,
 }: AppShellProps) {
   const [panelOpen, setPanelOpen] = useState(defaultPanelOpen);
+  const themeContext: ThemeContextValue = useTheme();
   const {
     theme,
     colorMode,
@@ -39,7 +41,7 @@ export function AppShell({
     colorModeOptions,
     setTheme,
     setColorMode,
-  } = useTheme();
+  } = themeContext;
   const resolvedPanelContent = panelContent ?? <DefaultPanelContent />;
   const shellClassName = `runtime-shell ${panelOpen ? "runtime-shell--panel-open" : "runtime-shell--panel-closed"}`;
   const contentClassName =
