@@ -20,6 +20,7 @@ export type MapRuntimeState = {
   treeSelectionEnabled: boolean;
   treeSelectionMessage: string | null;
   newTreePlacementEnabled: boolean;
+  pointSelectionVisibilityModeEnabled: boolean;
   newTreePlacementMessage: string | null;
   draftTreeLocation: {
     latitude: number;
@@ -56,12 +57,14 @@ type MapContextValue = MapRuntimeState & {
   setLoading: () => void;
   setReady: (payload: SetReadyPayload) => void;
   setError: (error: MapRuntimeError) => void;
+  detachMapRuntime: () => void;
   searchLocations: (query: string) => Promise<LocationSearchResult[]>;
   zoomToLocation: (location: LocationSearchResult) => Promise<void>;
   setTreeSelectionEnabled: (enabled: boolean) => void;
   setSelectedTreeId: (treeId: string | null) => void;
   setTreeSelectionMessage: (message: string | null) => void;
   setNewTreePlacementEnabled: (enabled: boolean) => void;
+  setPointSelectionVisibilityModeEnabled: (enabled: boolean) => void;
   setDraftTreeLocation: (location: { latitude: number; longitude: number } | null) => void;
   setNewTreePlacementMessage: (message: string | null) => void;
   addCreatedTree: (tree: CreatedTreeRecord) => void;
@@ -72,10 +75,12 @@ type MapRuntimeAction =
   | { type: "SET_LOADING" }
   | { type: "SET_READY"; payload: SetReadyPayload }
   | { type: "SET_ERROR"; payload: MapRuntimeError }
+  | { type: "DETACH_MAP_RUNTIME" }
   | { type: "SET_TREE_SELECTION_ENABLED"; payload: boolean }
   | { type: "SET_SELECTED_TREE_ID"; payload: string | null }
   | { type: "SET_TREE_SELECTION_MESSAGE"; payload: string | null }
   | { type: "SET_NEW_TREE_PLACEMENT_ENABLED"; payload: boolean }
+  | { type: "SET_POINT_SELECTION_VISIBILITY_MODE_ENABLED"; payload: boolean }
   | {
       type: "SET_DRAFT_TREE_LOCATION";
       payload: { latitude: number; longitude: number } | null;
@@ -95,6 +100,7 @@ const initialMapRuntimeState: MapRuntimeState = {
   treeSelectionEnabled: false,
   treeSelectionMessage: null,
   newTreePlacementEnabled: false,
+  pointSelectionVisibilityModeEnabled: false,
   newTreePlacementMessage: null,
   draftTreeLocation: null,
   createdTrees: [],
@@ -118,6 +124,7 @@ function mapRuntimeReducer(state: MapRuntimeState, action: MapRuntimeAction): Ma
         treeSelectionEnabled: state.treeSelectionEnabled,
         treeSelectionMessage: state.treeSelectionMessage,
         newTreePlacementEnabled: state.newTreePlacementEnabled,
+        pointSelectionVisibilityModeEnabled: state.pointSelectionVisibilityModeEnabled,
         newTreePlacementMessage: state.newTreePlacementMessage,
         draftTreeLocation: state.draftTreeLocation,
         createdTrees: state.createdTrees,
@@ -127,6 +134,14 @@ function mapRuntimeReducer(state: MapRuntimeState, action: MapRuntimeAction): Ma
         ...state,
         status: "error",
         error: action.payload,
+      };
+    case "DETACH_MAP_RUNTIME":
+      return {
+        ...state,
+        webMap: null,
+        mapView: null,
+        status: "idle",
+        error: null,
       };
     case "SET_TREE_SELECTION_ENABLED":
       if (
@@ -160,19 +175,23 @@ function mapRuntimeReducer(state: MapRuntimeState, action: MapRuntimeAction): Ma
         treeSelectionMessage: action.payload,
       };
     case "SET_NEW_TREE_PLACEMENT_ENABLED":
-      if (
-        state.newTreePlacementEnabled === action.payload &&
-        (action.payload || (state.newTreePlacementMessage === null && state.draftTreeLocation === null))
-      ) {
+      if (state.newTreePlacementEnabled === action.payload) {
         return state;
       }
       return {
         ...state,
         newTreePlacementEnabled: action.payload,
-        draftTreeLocation: action.payload ? state.draftTreeLocation : null,
         newTreePlacementMessage: action.payload
-          ? "Click the map to place your new tree."
-          : null,
+          ? state.newTreePlacementMessage ?? "Click the map to place your new tree."
+          : state.newTreePlacementMessage,
+      };
+    case "SET_POINT_SELECTION_VISIBILITY_MODE_ENABLED":
+      if (state.pointSelectionVisibilityModeEnabled === action.payload) {
+        return state;
+      }
+      return {
+        ...state,
+        pointSelectionVisibilityModeEnabled: action.payload,
       };
     case "SET_DRAFT_TREE_LOCATION":
       if (
@@ -226,6 +245,9 @@ export function MapProvider({ children }: PropsWithChildren) {
       },
       setError(error) {
         dispatch({ type: "SET_ERROR", payload: error });
+      },
+      detachMapRuntime() {
+        dispatch({ type: "DETACH_MAP_RUNTIME" });
       },
       async searchLocations(query) {
         const trimmedQuery = query.trim();
@@ -295,6 +317,12 @@ export function MapProvider({ children }: PropsWithChildren) {
       },
       setNewTreePlacementEnabled(enabled) {
         dispatch({ type: "SET_NEW_TREE_PLACEMENT_ENABLED", payload: enabled });
+      },
+      setPointSelectionVisibilityModeEnabled(enabled) {
+        dispatch({
+          type: "SET_POINT_SELECTION_VISIBILITY_MODE_ENABLED",
+          payload: enabled,
+        });
       },
       setDraftTreeLocation(location) {
         dispatch({ type: "SET_DRAFT_TREE_LOCATION", payload: location });

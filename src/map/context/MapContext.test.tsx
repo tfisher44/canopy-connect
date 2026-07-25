@@ -10,6 +10,7 @@ function RuntimeConsumer() {
     <section>
       <p>Status: {runtime.status}</p>
       <p>Error: {runtime.error?.message ?? "none"}</p>
+      <p>Point selection mode: {runtime.pointSelectionVisibilityModeEnabled ? "on" : "off"}</p>
       <button type="button" onClick={runtime.setLoading}>
         Set loading
       </button>
@@ -18,6 +19,15 @@ function RuntimeConsumer() {
       </button>
       <button type="button" onClick={() => runtime.setReady({ mapView: null, webMap: null })}>
         Set ready
+      </button>
+      <button type="button" onClick={runtime.detachMapRuntime}>
+        Detach map runtime
+      </button>
+      <button type="button" onClick={() => runtime.setPointSelectionVisibilityModeEnabled(true)}>
+        Enable point selection mode
+      </button>
+      <button type="button" onClick={() => runtime.setPointSelectionVisibilityModeEnabled(false)}>
+        Disable point selection mode
       </button>
       <button type="button" onClick={runtime.reset}>
         Reset
@@ -43,6 +53,7 @@ describe("MapProvider", () => {
 
     expect(screen.getByText("Status: idle")).toBeInTheDocument();
     expect(screen.getByText("Error: none")).toBeInTheDocument();
+    expect(screen.getByText("Point selection mode: off")).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Set loading" }));
     expect(screen.getByText("Status: loading")).toBeInTheDocument();
@@ -55,8 +66,25 @@ describe("MapProvider", () => {
     expect(screen.getByText("Status: ready")).toBeInTheDocument();
     expect(screen.getByText("Error: none")).toBeInTheDocument();
 
+    await user.click(screen.getByRole("button", { name: "Detach map runtime" }));
+    expect(screen.getByText("Status: idle")).toBeInTheDocument();
+    expect(screen.getByText("Error: none")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Enable point selection mode" }));
+    expect(screen.getByText("Point selection mode: on")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Enable point selection mode" }));
+    expect(screen.getByText("Point selection mode: on")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Disable point selection mode" }));
+    expect(screen.getByText("Point selection mode: off")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Disable point selection mode" }));
+    expect(screen.getByText("Point selection mode: off")).toBeInTheDocument();
+
     await user.click(screen.getByRole("button", { name: "Reset" }));
     expect(screen.getByText("Status: idle")).toBeInTheDocument();
     expect(screen.getByText("Error: none")).toBeInTheDocument();
+    expect(screen.getByText("Point selection mode: off")).toBeInTheDocument();
   });
 });

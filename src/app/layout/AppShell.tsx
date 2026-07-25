@@ -4,6 +4,7 @@ import {
   AppRibbon,
   MatteSidebar,
   SidebarToggleButton,
+  ThemeControls,
 } from "../../components/ui";
 import { TreeStoryFlowPanel } from "../../features/intake/components/TreeStoryFlowPanel";
 import { MapPlaceholder } from "../../features/map/components/Map";
@@ -44,12 +45,15 @@ export function AppShell({
     <div className={shellClassName}>
       <AppRibbon
         title="Canopy Connect"
-        colorMode={colorMode}
-        activeTheme={theme}
-        themeOptions={options}
-        colorModeOptions={colorModeOptions}
-        onThemeChange={setTheme}
-        onColorModeChange={setColorMode}
+        action={
+          <SidebarToggleButton
+            open={panelOpen}
+            controls="workflow-panel"
+            closedLabel="Add a new Tree/Story"
+            openLabel="Explore map"
+            onToggle={() => setPanelOpen((current) => !current)}
+          />
+        }
       />
       <main className={contentClassName}>
         <section
@@ -60,16 +64,20 @@ export function AppShell({
         </section>
         {panelOpen ? (
           <MatteSidebar id="workflow-panel" label={panelLabel}>
+            <div className="runtime-shell__panel-theme-controls">
+              <ThemeControls
+                colorMode={colorMode}
+                activeTheme={theme}
+                themeOptions={options}
+                colorModeOptions={colorModeOptions}
+                onThemeChange={setTheme}
+                onColorModeChange={setColorMode}
+              />
+            </div>
             {resolvedPanelContent}
           </MatteSidebar>
         ) : null}
       </main>
-      <SidebarToggleButton
-        open={panelOpen}
-        controls="workflow-panel"
-        closedLabel="Add a new Tree/Story"
-        onToggle={() => setPanelOpen((current) => !current)}
-      />
     </div>
   );
 }

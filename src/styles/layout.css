@@ -65,6 +65,46 @@
   min-width: 0;
 }
 
+.runtime-shell__panel-theme-controls {
+  padding: 0.7rem 0.85rem 0.5rem;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.runtime-shell__panel-theme-controls .theme-switcher__select {
+  min-height: 2rem;
+}
+
+.runtime-shell__panel-theme-controls .mode-toggle {
+  min-height: 2rem;
+}
+
+.runtime-shell__panel-theme-controls .mode-toggle__item {
+  height: calc(2rem - 0.24rem - 2px);
+  width: 2rem;
+}
+
+.runtime-shell__map-cta {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
 .runtime-shell__panel-toggle {
   width: fit-content;
+  font-size: 1rem;
+  font-weight: 700;
+  padding: 0.72rem 1.05rem;
+  border-color: color-mix(in oklab, var(--border-neon) 78%, transparent);
+  background: color-mix(in oklab, var(--surface-matte) 84%, rgba(8, 18, 36, 0.4));
+  box-shadow:
+    0 0.45rem 1.05rem rgba(0, 0, 0, 0.26),
+    0 0 0.8rem color-mix(in oklab, var(--border-neon) 30%, transparent);
+  backdrop-filter: blur(8px);
 }

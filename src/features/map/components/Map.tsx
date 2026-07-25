@@ -21,6 +21,28 @@ type ArcgisMapRuntimeTarget = ArcgisMap & {
   view: MapView | null;
 };
 
+type LayerWithVisibility = {
+  id?: string;
+  type?: string;
+  title?: string;
+  visible?: boolean;
+  portalItem?: {
+    title?: string;
+  };
+  set?: (propertyName: "visible", value: boolean) => void;
+};
+
+type LayerVisibilitySnapshot = {
+  layer: LayerWithVisibility;
+  visible: boolean;
+};
+
+type PointSelectionVisibilitySnapshot = {
+  mapView: MapView;
+  basemap: WebMap["basemap"] | null;
+  layers: LayerVisibilitySnapshot[];
+};
+
 function isArcgisMapRuntimeTarget(
   target: EventTarget | null,
 ): target is ArcgisMapRuntimeTarget {
@@ -44,6 +66,133 @@ function getErrorMessage(cause: unknown): string {
 
 const STORY_ELIGIBLE_TREE_LAYER_ID = "story-eligible-trees";
 const TREE_STORY_OVERLAY_LAYER_ID = "tree-story-workflow-overlay";
+const IMAGERY_KEYWORDS = ["imagery", "satellite", "aerial", "ortho"];
+const DRAFT_TREE_MARKER_ICON_URL =
+  "https://img.icons8.com/isometric/100/deciduous-tree.png";
+
+function getBasemapLayers(mapView: MapView): LayerWithVisibility[] {
+  const baseLayers = mapView.map?.basemap?.baseLayers?.toArray() ?? [];
+  const referenceLayers =
+    mapView.map?.basemap?.referenceLayers?.toArray() ?? [];
+  return [...baseLayers, ...referenceLayers] as LayerWithVisibility[];
+}
+
+function getLayerSearchText(layer: LayerWithVisibility): string {
+  const values = [layer.id, layer.title, layer.portalItem?.title]
+    .filter(
+      (value): value is string =>
+        typeof value === "string" && value.trim().length > 0,
+    )
+    .map((value) => value.toLowerCase());
+  return values.join(" ");
+}
+
+function isImageryLayer(layer: LayerWithVisibility): boolean {
+  const typeName =
+    typeof layer.type === "string" ? layer.type.toLowerCase() : "";
+  if (typeName.includes("imagery")) {
+    return true;
+  }
+  const searchText = getLayerSearchText(layer);
+  return IMAGERY_KEYWORDS.some((keyword) => searchText.includes(keyword));
+}
+
+function setLayerVisibility(
+  layer: LayerWithVisibility,
+  visible: boolean,
+): void {
+  if (typeof layer.set === "function") {
+    layer.set("visible", visible);
+    return;
+  }
+  layer.visible = visible;
+}
+
+function capturePointSelectionVisibilitySnapshot(
+  mapView: MapView,
+): PointSelectionVisibilitySnapshot {
+  const map = mapView.map;
+  const basemap = map?.basemap ?? null;
+  const layers = [
+    ...getBasemapLayers(mapView),
+    ...((map?.layers.toArray() as LayerWithVisibility[]) ?? []),
+  ].map((layer) => ({
+    layer,
+    visible: layer.visible === true,
+  }));
+  return { mapView, basemap, layers };
+}
+
+function restorePointSelectionVisibilitySnapshot(
+  snapshot: PointSelectionVisibilitySnapshot,
+): void {
+  const map = snapshot.mapView.map;
+  if (!map) {
+    return;
+  }
+
+  if (snapshot.basemap) {
+    map.basemap = snapshot.basemap;
+  }
+
+  snapshot.layers.forEach(({ layer, visible }) => {
+    setLayerVisibility(layer, visible);
+  });
+}
+
+async function applyImageryOnlyVisibilityMode(
+  mapView: MapView,
+  isDisposed: () => boolean,
+): Promise<void> {
+  const map = mapView.map;
+  if (!map) {
+    return;
+  }
+
+  const basemapLayers = getBasemapLayers(mapView);
+  const operationalLayers = map.layers.toArray() as LayerWithVisibility[];
+  const imageryLayers = [...basemapLayers, ...operationalLayers].filter(
+    isImageryLayer,
+  );
+  const activeImageryLayers = imageryLayers.filter(
+    (layer) => layer.visible === true,
+  );
+
+  if (activeImageryLayers.length > 0) {
+    activeImageryLayers.forEach((layer) => {
+      setLayerVisibility(layer, true);
+    });
+  } else {
+    const fallbackImageryLayer = basemapLayers.find(isImageryLayer);
+    if (fallbackImageryLayer) {
+      setLayerVisibility(fallbackImageryLayer, true);
+    } else {
+      const { default: Basemap } = await import("@arcgis/core/Basemap");
+      if (isDisposed()) {
+        return;
+      }
+      const defaultImageryBasemap = Basemap.fromId("satellite");
+      if (defaultImageryBasemap) {
+        map.basemap = defaultImageryBasemap;
+        getBasemapLayers(mapView)
+          .filter(isImageryLayer)
+          .forEach((layer) => {
+            setLayerVisibility(layer, true);
+          });
+      }
+    }
+  }
+
+  operationalLayers.forEach((layer) => {
+    if (layer.id === TREE_STORY_OVERLAY_LAYER_ID) {
+      setLayerVisibility(layer, true);
+      return;
+    }
+    if (!isImageryLayer(layer)) {
+      setLayerVisibility(layer, false);
+    }
+  });
+}
 
 function getTreeIdFromGraphic(graphic: Graphic): string | null {
   const attributes = graphic.attributes as unknown;
@@ -101,19 +250,22 @@ export function MapPlaceholder() {
     mapView,
     treeSelectionEnabled,
     newTreePlacementEnabled,
+    pointSelectionVisibilityModeEnabled,
     draftTreeLocation,
     createdTrees,
     setLoading,
     setReady,
     setError,
+    detachMapRuntime,
     setSelectedTreeId,
     setTreeSelectionMessage,
     setDraftTreeLocation,
     setNewTreePlacementMessage,
-    reset,
   } = useMapRuntime();
   const mapElementRef = useRef<ArcgisMap | null>(null);
   const searchElementRef = useRef<ArcgisSearch | null>(null);
+  const pointSelectionVisibilitySnapshotRef =
+    useRef<PointSelectionVisibilitySnapshot | null>(null);
   const layerListElementRef = useRef<ArcgisLayerList | null>(null);
   const [componentsReady, setComponentsReady] = useState(
     import.meta.env.MODE === "test",
@@ -135,7 +287,7 @@ export function MapPlaceholder() {
           import("@arcgis/map-components/components/arcgis-zoom"),
           import("@arcgis/map-components/components/arcgis-search"),
           import("@arcgis/map-components/components/arcgis-home"),
-          import("@arcgis/map-components/components/arcgis-legend")
+          import("@arcgis/map-components/components/arcgis-legend"),
         ]);
       } catch (cause) {
         if (isMounted) {
@@ -167,7 +319,8 @@ export function MapPlaceholder() {
     }
 
     bindSearchToMap(mapElement, searchElementRef.current);
-  configureLayerListLegendPanels(layerListElementRef.current);
+    configureLayerListLegendPanels(layerListElementRef.current);
+    const searchElement = searchElementRef.current;
 
     let isMounted = true;
     setLoading();
@@ -228,10 +381,7 @@ export function MapPlaceholder() {
 
     mapElement.addEventListener("arcgisViewReadyChange", handleViewReady);
     mapElement.addEventListener("arcgisLoadError", handleLoadError);
-    searchElementRef.current?.addEventListener(
-      "arcgisReady",
-      handleSearchReady,
-    );
+    searchElement?.addEventListener("arcgisReady", handleSearchReady);
     layerListElementRef.current?.addEventListener(
       "arcgisReady",
       handleLayerListReady,
@@ -241,15 +391,12 @@ export function MapPlaceholder() {
       isMounted = false;
       mapElement.removeEventListener("arcgisViewReadyChange", handleViewReady);
       mapElement.removeEventListener("arcgisLoadError", handleLoadError);
-      searchElementRef.current?.removeEventListener(
-        "arcgisReady",
-        handleSearchReady,
-      );
+      searchElement?.removeEventListener("arcgisReady", handleSearchReady);
       layerListElementRef.current?.removeEventListener(
         "arcgisReady",
         handleLayerListReady,
       );
-      reset();
+      detachMapRuntime();
     };
     // Mount/unmount lifecycle is intentional for ArcGIS component wiring.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -316,7 +463,6 @@ export function MapPlaceholder() {
     const clickHandle = mapView.on("click", (event) => {
       const mapPoint = event.mapPoint;
       if (!mapPoint) {
-        setDraftTreeLocation(null);
         setNewTreePlacementMessage("Unable to read map location from click.");
         return;
       }
@@ -324,7 +470,6 @@ export function MapPlaceholder() {
       const rawLatitude = mapPoint.latitude;
       const rawLongitude = mapPoint.longitude;
       if (typeof rawLatitude !== "number" || typeof rawLongitude !== "number") {
-        setDraftTreeLocation(null);
         setNewTreePlacementMessage(
           "Unable to read map coordinates from click.",
         );
@@ -348,6 +493,30 @@ export function MapPlaceholder() {
     setDraftTreeLocation,
     setNewTreePlacementMessage,
   ]);
+
+  useEffect(() => {
+    if (!mapView || !mapView.map || !pointSelectionVisibilityModeEnabled) {
+      const snapshot = pointSelectionVisibilitySnapshotRef.current;
+      if (snapshot && snapshot.mapView === mapView) {
+        restorePointSelectionVisibilitySnapshot(snapshot);
+      }
+      pointSelectionVisibilitySnapshotRef.current = null;
+      return;
+    }
+
+    const existingSnapshot = pointSelectionVisibilitySnapshotRef.current;
+    if (!existingSnapshot || existingSnapshot.mapView !== mapView) {
+      pointSelectionVisibilitySnapshotRef.current =
+        capturePointSelectionVisibilitySnapshot(mapView);
+    }
+
+    let isDisposed = false;
+    void applyImageryOnlyVisibilityMode(mapView, () => isDisposed);
+
+    return () => {
+      isDisposed = true;
+    };
+  }, [mapView, pointSelectionVisibilityModeEnabled]);
 
   useEffect(() => {
     if (!mapView?.map) {
@@ -376,6 +545,7 @@ export function MapPlaceholder() {
         });
         map.add(overlayLayer);
       }
+      overlayLayer.visible = true;
 
       overlayLayer.removeAll();
 
@@ -413,14 +583,11 @@ export function MapPlaceholder() {
               longitude: draftTreeLocation.longitude,
             },
             symbol: {
-              type: "simple-marker",
-              style: "x",
-              color: "#38bdf8",
-              size: 13,
-              outline: {
-                color: "#082f49",
-                width: 2,
-              },
+              type: "picture-marker",
+              url: DRAFT_TREE_MARKER_ICON_URL,
+              width: 28,
+              height: 28,
+              yoffset: 14,
             },
           }),
         );
@@ -442,8 +609,6 @@ export function MapPlaceholder() {
           ref={mapElementRef}
           className="map-placeholder__viewport"
           item-id="20712c612e0149c99d32354f089881c4"
-          center={[-119.44944, 37.16611]}
-          zoom={5}
           autoDestroyDisabled={true}
         >
           <arcgis-search
@@ -461,11 +626,6 @@ export function MapPlaceholder() {
           <arcgis-home slot="top-right" />
           <arcgis-zoom slot="top-right" />
           <arcgis-fullscreen slot="top-right" />
-          {/* <arcgis-legend
-            slot="bottom-right"
-            autoDestroyDisabled={true}
-            style={{ height: "20rem", overflow: "auto" }}
-          /> */}
         </arcgis-map>
       ) : (
         <div

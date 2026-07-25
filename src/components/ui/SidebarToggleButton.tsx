@@ -11,12 +11,12 @@ export function SidebarToggleButton({
   onToggle,
   controls,
   closedLabel = "Open panel",
-  openLabel = "Hide panel",
+  openLabel = "Explore map",
 }: SidebarToggleButtonProps) {
   return (
     <button
       type="button"
-      className="button button--neon runtime-shell__panel-toggle"
+      className="button button--ghost runtime-shell__panel-toggle"
       onClick={onToggle}
       aria-expanded={open}
       aria-controls={controls}

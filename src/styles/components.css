@@ -139,22 +139,6 @@
   gap: 0.35rem;
 }
 
-.theme-switcher__icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.4rem;
-  height: 1.4rem;
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: color-mix(in oklab, var(--text-muted) 86%, var(--text-primary) 14%);
-  user-select: none;
-  pointer-events: none;
-  border-radius: 999px;
-  border: 1px solid color-mix(in oklab, var(--border-neon) 58%, transparent);
-  background: color-mix(in oklab, var(--surface-matte) 90%, #000 10%);
-}
-
 .theme-switcher__select {
   appearance: none;
   border-radius: 999px;
