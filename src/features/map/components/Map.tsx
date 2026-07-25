@@ -5,10 +5,27 @@ import type { ArcgisMap } from "@arcgis/map-components/components/arcgis-map/cus
 import type {} from "@arcgis/map-components/types/react";
 import { useMapRuntime } from "../../../map/context/MapContext";
 
-// TODO: need to include the arcgis api in order to enable search
+type ArcgisMapRuntimeTarget = ArcgisMap & {
+  map: WebMap | null;
+  view: MapView | null;
+};
+
+function isArcgisMapRuntimeTarget(target: EventTarget | null): target is ArcgisMapRuntimeTarget {
+  return typeof target === "object" && target !== null && "map" in target && "view" in target;
+}
+
+function getErrorMessage(cause: unknown): string {
+  if (cause instanceof Error && cause.message) {
+    return cause.message;
+  }
+  if (typeof cause === "string" && cause.trim().length > 0) {
+    return cause;
+  }
+  return "Failed to load map.";
+}
 
 export function MapPlaceholder() {
-  const { error, setReady, setError, reset } = useMapRuntime();
+  const { error, setLoading, setReady, setError, reset } = useMapRuntime();
   const mapElementRef = useRef<ArcgisMap | null>(null);
   const [componentsReady, setComponentsReady] = useState(import.meta.env.MODE === "test");
 
@@ -33,15 +50,22 @@ export function MapPlaceholder() {
         }
       }
 
-      await Promise.all([
-        import("@arcgis/map-components/components/arcgis-map/customElement"),
-        import("@arcgis/map-components/components/arcgis-layer-list/customElement"),
-        import("@arcgis/map-components/components/arcgis-fullscreen/customElement"),
-        import("@arcgis/map-components/components/arcgis-zoom/customElement"),
-        import("@arcgis/map-components/components/arcgis-search/customElement"),
-        import("@arcgis/map-components/components/arcgis-locate/customElement"),
-        import("@arcgis/map-components/components/arcgis-home/customElement"),
-      ]);
+      try {
+        await Promise.all([
+          import("@arcgis/map-components/components/arcgis-map/customElement"),
+          import("@arcgis/map-components/components/arcgis-layer-list/customElement"),
+          import("@arcgis/map-components/components/arcgis-fullscreen/customElement"),
+          import("@arcgis/map-components/components/arcgis-zoom/customElement"),
+          import("@arcgis/map-components/components/arcgis-search/customElement"),
+          import("@arcgis/map-components/components/arcgis-locate/customElement"),
+          import("@arcgis/map-components/components/arcgis-home/customElement"),
+        ]);
+      } catch (cause) {
+        if (isMounted) {
+          setError({ message: getErrorMessage(cause), cause });
+        }
+        return;
+      }
 
       if (isMounted) {
         setComponentsReady(true);
@@ -53,7 +77,7 @@ export function MapPlaceholder() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [setError]);
 
   useEffect(() => {
     if (!componentsReady) {
@@ -66,18 +90,20 @@ export function MapPlaceholder() {
     }
 
     let isMounted = true;
+    setLoading();
 
-    const handleViewReady = () => {
+    const handleViewReady: EventListener = (event) => {
       if (!isMounted) {
         return;
       }
 
-      const componentWithView = mapElement as HTMLElement & {
-        map: WebMap | null;
-        view: MapView | null;
-      };
-      const webMap = componentWithView.map;
-      const mapView = componentWithView.view;
+      if (!isArcgisMapRuntimeTarget(event.target)) {
+        setError({ message: "Map runtime failed to initialize.", cause: event });
+        return;
+      }
+
+      const webMap = event.target.map;
+      const mapView = event.target.view;
       if (!mapView) {
         return;
       }
@@ -96,18 +122,17 @@ export function MapPlaceholder() {
       setReady({ webMap, mapView });
     };
 
-    const handleLoadError = (event: Event) => {
-      const message = event instanceof ErrorEvent && event.message ? event.message : "Failed to load map.";
-      setError({ message, cause: event });
+    const handleLoadError: EventListener = (event) => {
+      setError({ message: getErrorMessage(event), cause: event });
     };
 
-    mapElement.addEventListener("arcgisViewReadyChange", handleViewReady as EventListener);
-    mapElement.addEventListener("arcgisLoadError", handleLoadError as EventListener);
+    mapElement.addEventListener("arcgisViewReadyChange", handleViewReady);
+    mapElement.addEventListener("arcgisLoadError", handleLoadError);
 
     return () => {
       isMounted = false;
-      mapElement.removeEventListener("arcgisViewReadyChange", handleViewReady as EventListener);
-      mapElement.removeEventListener("arcgisLoadError", handleLoadError as EventListener);
+      mapElement.removeEventListener("arcgisViewReadyChange", handleViewReady);
+      mapElement.removeEventListener("arcgisLoadError", handleLoadError);
       reset();
     };
     // Mount/unmount lifecycle is intentional for ArcGIS component wiring.
@@ -116,7 +141,7 @@ export function MapPlaceholder() {
 
 
   return (
-    <section className="panel stack" aria-labelledby="map-title">
+    <section className="map-placeholder" aria-label="Map viewport">
       {error ? <p className="error">{error.message}</p> : null}
       {componentsReady ? (
         <arcgis-map
@@ -135,9 +160,10 @@ export function MapPlaceholder() {
           <arcgis-fullscreen slot="top-right" />
         </arcgis-map>
       ) : (
-        <div className="map-placeholder__viewport" role="status" aria-live="polite" />
+        <div className="map-placeholder__viewport map-placeholder__viewport--loading" role="status" aria-live="polite">
+          Loading map…
+        </div>
       )}
     </section>
   );
 }
-

@@ -6,6 +6,7 @@ import {
   MatteSidebar,
   SidebarToggleButton,
 } from "../../components/ui";
+import { MapPlaceholder } from "../../features/map/components/Map";
 import { useTheme } from "../../theme/ThemeContext";
 
 type AppShellProps = {
