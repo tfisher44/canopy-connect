@@ -27,9 +27,11 @@ export function AppShell({
   const [panelOpen, setPanelOpen] = useState(defaultPanelOpen);
   const { theme, colorMode, options, colorModeOptions, setTheme, setColorMode } = useTheme();
   const resolvedPanelContent = panelContent ?? <DefaultPanelContent />;
+  const shellClassName = `runtime-shell ${panelOpen ? "runtime-shell--panel-open" : "runtime-shell--panel-closed"}`;
+  const contentClassName = `runtime-shell__content ${panelOpen ? "runtime-shell__content--panel-open" : ""}`.trim();
 
   return (
-    <div className={`runtime-shell ${panelOpen ? "runtime-shell--panel-open" : ""}`}>
+    <div className={shellClassName}>
       <AppRibbon
         title="Canopy Connect"
         colorMode={colorMode}
@@ -39,7 +41,7 @@ export function AppShell({
         onThemeChange={setTheme}
         onColorModeChange={setColorMode}
       />
-      <main className="runtime-shell__content">
+      <main className={contentClassName}>
         <section className="runtime-shell__map-region" aria-label="Map workspace">
           <div className="runtime-shell__map-controls" aria-label="Map controls anchor">
             <button type="button" className="button button--ghost button--matte" disabled>

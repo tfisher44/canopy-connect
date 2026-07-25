@@ -1,0 +1,57 @@
+.style-compliant-components {
+  height: 100%;
+  overflow: auto;
+}
+
+.style-compliant-components__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.style-compliant-components__row {
+  border-radius: 0.7rem;
+  padding: 0.75rem;
+}
+
+.style-compliant-components__row--matte {
+  background: rgba(8, 17, 34, 0.72);
+  border-color: color-mix(in oklab, var(--border-neon) 38%, transparent);
+}
+
+.style-compliant-components__row h3 {
+  margin: 0;
+}
+
+.style-compliant-components__row p {
+  margin: 0.35rem 0;
+}
+
+.style-compliant-components__metadata {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0.35rem 0 0;
+}
+
+.style-compliant-components__metadata dt {
+  font-weight: 600;
+}
+
+.style-compliant-components__metadata dd {
+  margin: 0;
+}
+
+.style-compliant-components__overdue-badge {
+  margin-top: 0.5rem;
+  display: inline-block;
+  background: rgba(250, 204, 21, 0.12);
+  color: #fde68a;
+  border: 1px solid rgba(250, 204, 21, 0.52);
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  padding: 0.15rem 0.55rem;
+}

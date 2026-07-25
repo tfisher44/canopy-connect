@@ -1,0 +1,70 @@
+.runtime-shell {
+  min-height: 100vh;
+  padding: 0 0.75rem 0.75rem;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  gap: 0.75rem;
+}
+
+.runtime-shell__header {
+  padding: 0;
+}
+
+.runtime-shell__header h1 {
+  margin: 0;
+}
+
+.runtime-shell__header p {
+  margin: 0.25rem 0 0;
+}
+
+.runtime-shell__content {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+  padding-top: calc(var(--header-height) + 0.85rem);
+}
+
+.runtime-shell--panel-open .runtime-shell__content {
+  grid-template-columns: minmax(0, 3fr) minmax(0, 1fr);
+}
+
+.runtime-shell__content--panel-open {
+  grid-template-columns: minmax(0, 3fr) minmax(0, 1fr);
+}
+
+.runtime-shell__map-region {
+  min-height: calc(100vh - var(--header-height) - 8.25rem);
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  border-radius: 1rem;
+  overflow: hidden;
+  border: 1px solid transparent;
+  background:
+    radial-gradient(circle at 20% 18%, var(--hero-overlay-a), transparent 45%),
+    radial-gradient(circle at 82% 14%, var(--hero-overlay-b), transparent 44%),
+    radial-gradient(circle at 52% 88%, var(--hero-overlay-c), transparent 42%),
+    linear-gradient(125deg, rgba(7, 12, 26, 0.96), rgba(8, 18, 38, 0.96)) padding-box,
+    linear-gradient(120deg, var(--border-neon), var(--border-neon-strong)) border-box;
+  box-shadow:
+    0 1.2rem 2.6rem rgba(0, 0, 0, 0.36),
+    0 0 1.1rem color-mix(in oklab, var(--border-neon) 45%, transparent),
+    0 0 1.5rem color-mix(in oklab, var(--border-neon-strong) 32%, transparent);
+}
+
+.runtime-shell__map-controls {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 2;
+}
+
+.runtime-shell__panel {
+  min-width: 0;
+}
+
+.runtime-shell__panel-toggle {
+  width: fit-content;
+}
