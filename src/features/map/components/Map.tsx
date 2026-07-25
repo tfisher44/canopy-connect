@@ -609,8 +609,6 @@ export function MapPlaceholder() {
           ref={mapElementRef}
           className="map-placeholder__viewport"
           item-id="20712c612e0149c99d32354f089881c4"
-          center={[-119.44944, 37.16611]}
-          zoom={5}
           autoDestroyDisabled={true}
         >
           <arcgis-search
