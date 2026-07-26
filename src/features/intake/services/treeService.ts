@@ -1,7 +1,10 @@
 import type FeatureLayer from "@arcgis/core/layers/FeatureLayer";
 import type MapView from "@arcgis/core/views/MapView";
 import type { AttachmentEdit, EditOptions } from "@arcgis/core/editing/types";
-import { enrichTreeAttributesFromMap } from "./treeEnrichmentService";
+import {
+  enrichTreeAttributesFromMap,
+  getConfiguredEnrichmentTargetFields,
+} from "./treeEnrichmentService";
 
 export type CreateTreeInput = {
   mapView: MapView;
@@ -17,6 +20,10 @@ export type CreatedTree = {
   longitude: number;
   isAlive: boolean;
   canopyValue: string | number | null;
+  enrichedLayerValues?: Array<{
+    field: string;
+    value: string | null;
+  }>;
 };
 
 const TREE_LAYER_ID = "9424d21bd45345ffbd5a1736941ed88d";
@@ -119,6 +126,10 @@ function toCreatedTree(
   input: CreateTreeInput,
   id: string | number,
   attributes: Record<string, unknown>,
+  enrichedLayerValues: Array<{
+    field: string;
+    value: string | null;
+  }>,
 ): CreatedTree {
   return {
     id: String(id),
@@ -126,7 +137,42 @@ function toCreatedTree(
     longitude: input.longitude,
     isAlive: input.isAlive,
     canopyValue: resolveCanopyValue(attributes),
+    enrichedLayerValues,
   };
+}
+
+function normalizeEnrichedLayerValue(value: unknown): string | null {
+  if (value === null || typeof value === "undefined") {
+    return null;
+  }
+  if (
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean" ||
+    typeof value === "bigint"
+  ) {
+    return String(value);
+  }
+  return null;
+}
+
+function buildEnrichedLayerValues(
+  enrichedAttributes: Record<string, unknown>,
+): Array<{ field: string; value: string | null }> {
+  const configuredFields = getConfiguredEnrichmentTargetFields();
+  const values: Array<{ field: string; value: string | null }> = [];
+
+  for (const field of configuredFields) {
+    if (!(field in enrichedAttributes)) {
+      continue;
+    }
+    values.push({
+      field,
+      value: normalizeEnrichedLayerValue(enrichedAttributes[field]),
+    });
+  }
+
+  return values;
 }
 
 function findFieldNameIgnoreCase(
@@ -306,5 +352,7 @@ export async function createTree(input: CreateTreeInput): Promise<CreatedTree> {
     throw new Error("Tree layer add result did not include an id.");
   }
 
-  return toCreatedTree(input, createdId, enrichedAttributes);
+  const enrichedLayerValues = buildEnrichedLayerValues(enrichedAttributes);
+
+  return toCreatedTree(input, createdId, enrichedAttributes, enrichedLayerValues);
 }

@@ -9,7 +9,8 @@ export type PolygonEnrichmentRule = {
   enabled?: boolean;
   where?: string;
   fieldMappings: Array<{
-    sourceField: string;
+    sourceField?: string;
+    sourceFieldCandidates?: string[];
     targetField: string;
   }>;
 };
@@ -33,14 +34,62 @@ export type TreeEnrichmentConfig = {
 // Configure enrichment here: map source layer fields to target tree-layer fields.
 export const treeEnrichmentConfig: TreeEnrichmentConfig = {
   polygonRules: [
-    // Example:
-    // {
-    //   layerId: "polygon-layer-id",
-    //   enabled: true,
-    //   fieldMappings: [
-    //     { sourceField: "ZONE_NAME", targetField: "zone_name" },
-    //   ],
-    // },
+    {
+      layerId: "e1ae788201f24d3aa88dd01bd3eeca9f",
+      enabled: true,
+      fieldMappings: [
+        {
+          targetField: "County",
+          sourceFieldCandidates: ["County", "NAME", "CountyName", "COUNTY_NAME"],
+        },
+      ],
+    },
+    {
+      layerId: "c5730d03d2a049c4b767d7661ad85b72",
+      enabled: true,
+      fieldMappings: [
+        {
+          targetField: "ProtectedAreaName",
+          sourceFieldCandidates: [
+            "ProtectedAreaName",
+            "NAME",
+            "Name",
+            "UNIT_NAME",
+            "Site_Name",
+          ],
+        },
+        {
+          targetField: "ProtectedAreaDesig",
+          sourceFieldCandidates: [
+            "ProtectedAreaDesig",
+            "DESIG",
+            "Designation",
+            "DESIG_ENG",
+            "DESIG_TYPE",
+          ],
+        },
+        {
+          targetField: "ProtectedAreaMangAuth",
+          sourceFieldCandidates: [
+            "ProtectedAreaMangAuth",
+            "MANG_AUTH",
+            "MangAuth",
+            "MANG_AUTHORITY",
+            "MANAGER",
+          ],
+        },
+      ],
+    },
+    {
+      layerId: "93eccb9324ef4fe6ae66f832ba03f6b6",
+      enabled: true,
+      fieldMappings: [
+        {
+          targetField: "BuiltUp",
+          sourceFieldCandidates: ["BuiltUp", "BUILT_UP", "CLASS_NAME", "VALUE", "DN"],
+        },
+      ],
+    },
   ],
   rasterRules: [
     {
@@ -63,9 +112,77 @@ export const treeEnrichmentConfig: TreeEnrichmentConfig = {
       enabled: true,
       fieldMappings: [{ targetField: "PestsAndPathogens" }],
     },
+    {
+      layerId: "e346cb1f9ab94f399a9f274b4bf0d71c",
+      enabled: true,
+      fieldMappings: [{ targetField: "CompositeRiskIndex" }],
+    },
   ],
   strict: false,
 };
+
+export function getConfiguredEnrichmentTargetFields(
+  config: TreeEnrichmentConfig = treeEnrichmentConfig,
+): string[] {
+  const targets = [
+    ...config.polygonRules.flatMap((rule) =>
+      rule.fieldMappings.map((mapping) => mapping.targetField),
+    ),
+    ...config.rasterRules.flatMap((rule) =>
+      rule.fieldMappings.map((mapping) => mapping.targetField),
+    ),
+  ].filter((fieldName) => fieldName.trim().length > 0);
+
+  return [...new Set(targets)];
+}
+
+function normalizeFieldToken(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+function resolveSourceAttributeValue(
+  sourceAttributes: Record<string, unknown>,
+  mapping: {
+    sourceField?: string;
+    sourceFieldCandidates?: string[];
+    targetField: string;
+  },
+): unknown {
+  const requestedFields = [
+    mapping.sourceField,
+    ...(mapping.sourceFieldCandidates ?? []),
+    mapping.targetField,
+  ].filter(
+    (value): value is string =>
+      typeof value === "string" && value.trim().length > 0,
+  );
+
+  for (const requestedField of requestedFields) {
+    if (requestedField in sourceAttributes) {
+      return sourceAttributes[requestedField];
+    }
+  }
+
+  const normalizedAttributeEntries = Object.entries(sourceAttributes).map(
+    ([key, value]) => ({
+      key,
+      normalizedKey: normalizeFieldToken(key),
+      value,
+    }),
+  );
+
+  for (const requestedField of requestedFields) {
+    const normalizedRequestedField = normalizeFieldToken(requestedField);
+    const matchedEntry = normalizedAttributeEntries.find(
+      (entry) => entry.normalizedKey === normalizedRequestedField,
+    );
+    if (matchedEntry) {
+      return matchedEntry.value;
+    }
+  }
+
+  return undefined;
+}
 
 function normalizeLayerId(layerId: string): string {
   return layerId.trim();
@@ -214,7 +331,18 @@ async function queryPolygonRule(
   query.spatialRelationship = "intersects";
   query.returnGeometry = false;
   query.outFields = [
-    ...new Set(rule.fieldMappings.map((mapping) => mapping.sourceField)),
+    ...new Set(
+      rule.fieldMappings.flatMap((mapping) =>
+        [
+          mapping.sourceField,
+          ...(mapping.sourceFieldCandidates ?? []),
+          mapping.targetField,
+        ].filter(
+          (value): value is string =>
+            typeof value === "string" && value.trim().length > 0,
+        ),
+      ),
+    ),
   ];
   query.num = 1;
   if (rule.where) {
@@ -230,10 +358,10 @@ async function queryPolygonRule(
 
   const updates: Record<string, unknown> = {};
   for (const mapping of rule.fieldMappings) {
-    if (mapping.sourceField in sourceAttributes) {
-      updates[mapping.targetField] = normalizeMappedValueForTreeField(
-        sourceAttributes[mapping.sourceField],
-      );
+    const sourceValue = resolveSourceAttributeValue(sourceAttributes, mapping);
+    if (typeof sourceValue !== "undefined") {
+      updates[mapping.targetField] =
+        normalizeMappedValueForTreeField(sourceValue);
     }
   }
 
