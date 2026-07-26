@@ -152,11 +152,16 @@ export function TreeStoryFlowPanel() {
       setStorySubmitError("Select or create a tree before adding a story.");
       return;
     }
+    if (!mapView) {
+      setStorySubmitError("Map is not ready yet. Please wait a moment and try again.");
+      return;
+    }
 
     setStorySubmitError(null);
     setStorySubmitting(true);
     try {
       const createdStory = await createStory({
+        mapView,
         treeId: selectedTreeId,
         title: values.title,
         details: values.details,
@@ -465,13 +470,13 @@ export function TreeStoryFlowPanel() {
       {step === "story-form" ? (
         <section className="stack tree-story-flow__compact-step" aria-label="Add story flow step">
           <p className="muted">Add your story details and submit.</p>
-          {storySubmitError ? (
-            <p className="error" role="alert">
-              {storySubmitError}
-            </p>
-          ) : null}
           {selectedTreeId ? (
-            <AddStoryForm treeId={selectedTreeId} submitting={storySubmitting} onSubmit={handleAddStorySubmit} />
+            <AddStoryForm
+              treeId={selectedTreeId}
+              submitting={storySubmitting}
+              submitError={storySubmitError}
+              onSubmit={handleAddStorySubmit}
+            />
           ) : (
             <p className="error" role="alert">
               No selected tree found. Go back and select or create a tree first.

@@ -7,10 +7,11 @@ import { addStorySchema, type AddStoryFormValues } from "../features/intake/sche
 type AddStoryFormProps = {
   treeId: string;
   submitting: boolean;
+  submitError?: string | null;
   onSubmit: (values: AddStoryFormValues) => Promise<void>;
 };
 
-export function AddStoryForm({ treeId, submitting, onSubmit }: AddStoryFormProps) {
+export function AddStoryForm({ treeId, submitting, submitError, onSubmit }: AddStoryFormProps) {
   const {
     register,
     control,
@@ -163,8 +164,16 @@ export function AddStoryForm({ treeId, submitting, onSubmit }: AddStoryFormProps
       </div>
 
       <button type="submit" className="button" disabled={submitting || isSubmitting}>
-        Add story
+        {submitting || isSubmitting ? "Submitting story..." : "Add story"}
       </button>
+      <p className="muted" role="status" aria-live="polite">
+        {submitting || isSubmitting ? "Submitting story to the hosted table..." : ""}
+      </p>
+      {submitError ? (
+        <p className="error" role="alert">
+          {submitError}
+        </p>
+      ) : null}
     </form>
   );
 }

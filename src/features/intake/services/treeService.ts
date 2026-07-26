@@ -117,6 +117,56 @@ function toCreatedTree(
   };
 }
 
+function findFieldNameIgnoreCase(
+  layer: FeatureLayer,
+  candidates: string[],
+): string | null {
+  const match = layer.fields.find((field) =>
+    candidates.some((candidate) => field.name.toLowerCase() === candidate.toLowerCase()),
+  );
+  return match?.name ?? null;
+}
+
+function coerceIdValue(value: unknown): string | number | null {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === "string" && value.trim().length > 0) {
+    return value;
+  }
+  return null;
+}
+
+async function resolveTreeGlobalId2(
+  featureLayer: FeatureLayer,
+  addResult: { objectId?: number | null; globalId?: string | null },
+): Promise<string | number | null> {
+  const globalId2FieldName = findFieldNameIgnoreCase(featureLayer, ["GlobalID_2", "globalid2"]);
+  if (!globalId2FieldName) {
+    return null;
+  }
+
+  const queryFieldName = featureLayer.objectIdField ?? findFieldNameIgnoreCase(featureLayer, ["OBJECTID"]);
+  if (!queryFieldName || typeof addResult.objectId !== "number") {
+    return null;
+  }
+
+  const query = featureLayer.createQuery();
+  query.where = `${queryFieldName} = ${addResult.objectId}`;
+  query.returnGeometry = false;
+  query.outFields = [globalId2FieldName];
+  query.num = 1;
+
+  const result = await featureLayer.queryFeatures(query);
+  const feature = result.features.at(0);
+  if (!feature || !feature.attributes || typeof feature.attributes !== "object") {
+    return null;
+  }
+
+  const attributes = feature.attributes as Record<string, unknown>;
+  return coerceIdValue(attributes[globalId2FieldName]);
+}
+
 export async function createTree(input: CreateTreeInput): Promise<CreatedTree> {
   const featureLayer = findTreeLayer(input.mapView);
   await featureLayer.load();
@@ -160,12 +210,22 @@ export async function createTree(input: CreateTreeInput): Promise<CreatedTree> {
     throw new Error(`Add tree failed: ${addResult.error.message ?? "Unknown ArcGIS error."}`);
   }
 
-  const createdId =
-    typeof addResult.objectId === "number"
-      ? addResult.objectId
-      : typeof addResult.globalId === "string" && addResult.globalId.trim().length > 0
+  let createdId: string | number | null = null;
+
+  try {
+    createdId = await resolveTreeGlobalId2(featureLayer, addResult);
+  } catch {
+    createdId = null;
+  }
+
+  if (createdId === null) {
+    createdId =
+      typeof addResult.globalId === "string" && addResult.globalId.trim().length > 0
         ? addResult.globalId
-        : null;
+        : typeof addResult.objectId === "number"
+          ? addResult.objectId
+          : null;
+  }
 
   if (createdId === null) {
     throw new Error("Tree layer add result did not include an id.");
