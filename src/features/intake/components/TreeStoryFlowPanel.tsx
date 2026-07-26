@@ -39,7 +39,6 @@ async function showTreeAddedSuccessPopup(
   treeId: string,
   latitude: number,
   longitude: number,
-  canopyValue: string | number | null,
 ): Promise<void> {
   if (!mapView.popup) {
     return;
@@ -49,7 +48,7 @@ async function showTreeAddedSuccessPopup(
 
   mapView.popup.open({
     title: "Tree added",
-    content: `Tree ${treeId} was added successfully. Canopy value: ${canopyValue ?? "None"}.`,
+    content: `Tree ${treeId} was added successfully.`,
     location: new PointClass({
       latitude,
       longitude,
@@ -127,7 +126,6 @@ export function TreeStoryFlowPanel() {
         createdTree.id,
         createdTree.latitude,
         createdTree.longitude,
-        createdTree.canopyValue,
       );
       setStep("story-form");
     } catch (cause) {
