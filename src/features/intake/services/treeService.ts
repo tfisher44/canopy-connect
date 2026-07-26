@@ -51,11 +51,11 @@ function findTreeLayer(mapView: MapView): FeatureLayer {
   });
 
   if (!foundLayer) {
-    throw new Error(`Tree layer \"${TREE_LAYER_ID}\" was not found in the map.`);
+    throw new Error(`Tree layer "${TREE_LAYER_ID}" was not found in the map.`);
   }
 
   if (foundLayer.type !== "feature") {
-    throw new Error(`Layer \"${TREE_LAYER_ID}\" is not a feature layer.`);
+    throw new Error(`Layer "${TREE_LAYER_ID}" is not a feature layer.`);
   }
 
   return foundLayer as FeatureLayer;
@@ -230,7 +230,7 @@ export async function createTree(input: CreateTreeInput): Promise<CreatedTree> {
   await featureLayer.load();
 
   if (featureLayer.capabilities?.operations?.supportsAdd !== true) {
-    throw new Error(`Layer \"${TREE_LAYER_ID}\" does not support add operations.`);
+    throw new Error(`Layer "${TREE_LAYER_ID}" does not support add operations.`);
   }
 
   const [{ default: GraphicClass }, { default: PointClass }] = await Promise.all([
@@ -331,7 +331,7 @@ export async function createTree(input: CreateTreeInput): Promise<CreatedTree> {
     }
   }
 
-  let createdId: string | number | null = null;
+  let createdId: string | number | null;
 
   try {
     createdId = await resolveTreeGlobalId(featureLayer, addResult);

@@ -630,7 +630,6 @@ export function logSelectedTreeGraphicProperties(
   const layer = graphic.layer as LayerWithVisibility | undefined;
   const extractedTreeId = getTreeIdFromGraphic(graphic);
 
-  // eslint-disable-next-line no-console
   console.info("[TreeSelectionDebug] selected feature", {
     layer,
     source,
@@ -663,7 +662,6 @@ export function logPopupDetails(mapView: MapView): void {
       }))
     : [];
 
-  // eslint-disable-next-line no-console
   console.info("[TreeSelectionDebug] popup details", {
     selectedFeatureExists: Boolean(selectedFeature),
     visible: popup?.visible ?? null,
@@ -755,7 +753,6 @@ export async function logAttachmentCapabilities(mapView: MapView): Promise<void>
 
   await Promise.all([treeLayer?.load?.(), storiesTable?.load?.()]);
 
-  // eslint-disable-next-line no-console
   console.log("[AttachmentCapability] TREE", {
     supportsAttachment:
       treeLayer?.capabilities?.data?.supportsAttachment ?? null,
@@ -765,7 +762,6 @@ export async function logAttachmentCapabilities(mapView: MapView): Promise<void>
       treeLayer?.capabilities?.editing?.supportsGlobalId ?? null,
   });
 
-  // eslint-disable-next-line no-console
   console.log("[AttachmentCapability] STORIES", {
     supportsAttachment:
       storiesTable?.capabilities?.data?.supportsAttachment ?? null,

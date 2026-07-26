@@ -1,8 +1,10 @@
 import { cleanup, render, screen } from "@testing-library/react";
-import { afterEach } from "vitest";
+import { afterEach, beforeEach } from "vitest";
 import userEvent from "@testing-library/user-event";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { describe, expect, it, vi } from "vitest";
+import type WebMap from "@arcgis/core/WebMap";
+import type MapView from "@arcgis/core/views/MapView";
 import { MapProvider, useMapRuntime } from "../../../map/context/MapContext";
 import { TreeStoryFlowPanel } from "./TreeStoryFlowPanel";
 
@@ -18,7 +20,33 @@ afterEach(() => {
   cleanup();
 });
 
+beforeEach(() => {
+  createTreeMock.mockReset();
+});
+
 describe("TreeStoryFlowPanel", () => {
+  function MapReadyProbe() {
+    const runtime = useMapRuntime();
+    const initializedRef = useRef(false);
+
+    useEffect(() => {
+      if (initializedRef.current) {
+        return;
+      }
+      initializedRef.current = true;
+      runtime.setReady({
+        webMap: {} as WebMap,
+        mapView: {
+          popup: {
+            open: vi.fn(),
+          },
+        } as unknown as MapView,
+      });
+    }, [runtime]);
+
+    return null;
+  }
+
   function RuntimeProbe() {
     const runtime = useMapRuntime();
     const draftLocationLabel = runtime.draftTreeLocation
@@ -60,6 +88,7 @@ describe("TreeStoryFlowPanel", () => {
   function renderWithProviders() {
     render(
       <MapProvider>
+        <MapReadyProbe />
         <RuntimeProbe />
         <TreeStoryFlowPanel />
       </MapProvider>,
@@ -138,12 +167,14 @@ describe("TreeStoryFlowPanel", () => {
     expect(screen.getByRole("heading", { name: "Add tree" })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Add tree" }));
 
-    expect(createTreeMock).toHaveBeenCalledWith({
-      latitude: 35.123456,
-      longitude: -120.654321,
-      isAlive: true,
-      imageFile: undefined,
-    });
+    expect(createTreeMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        latitude: 35.123456,
+        longitude: -120.654321,
+        isAlive: true,
+        imageFile: undefined,
+      }),
+    );
     expect(screen.getByRole("heading", { name: "Add your tree story" })).toBeInTheDocument();
     expect(screen.getByLabelText("Story title")).toBeInTheDocument();
     expect(
@@ -162,6 +193,7 @@ describe("TreeStoryFlowPanel", () => {
     });
     render(
       <MapProvider>
+        <MapReadyProbe />
         <RuntimeProbe />
         <PanelMountHarness />
       </MapProvider>,
