@@ -31,6 +31,7 @@ type LayerWithVisibility = {
   visible?: boolean;
   portalItem?: {
     title?: string;
+    id?: string;
   };
   set?: (propertyName: "visible", value: boolean) => void;
 };
@@ -99,9 +100,10 @@ function getErrorMessage(cause: unknown): string {
   return "Failed to load map.";
 }
 
-const STORY_ELIGIBLE_TREE_LAYER_ID = "story-eligible-trees";
 const TREES_WITH_STORIES_LAYER_TITLE = "trees with stories";
 const TREE_STORY_OVERLAY_LAYER_ID = "tree-story-workflow-overlay";
+const TREE_LAYER_PORTAL_ITEM_ID = "9424d21bd45345ffbd5a1736941ed88d";
+const STORIES_TABLE_PORTAL_ITEM_ID = "8c367ee0703d4c6abc010df5a69c8aae";
 const IMAGERY_KEYWORDS = ["imagery", "satellite", "aerial", "ortho"];
 const DRAFT_TREE_ID_PREFIX = "draft-tree-";
 const DRAFT_TREE_MARKER_ICON_URL =
@@ -144,19 +146,7 @@ function isImageryLayer(layer: LayerWithVisibility): boolean {
 }
 
 function isStoryEligibleLayer(layer: LayerWithVisibility): boolean {
-  if (layer.id === STORY_ELIGIBLE_TREE_LAYER_ID) {
-    return true;
-  }
-
-  const title = [
-    typeof layer.title === "string" ? layer.title : null,
-    typeof layer.portalItem?.title === "string" ? layer.portalItem.title : null,
-  ]
-    .filter((value): value is string => value !== null)
-    .map((value) => value.trim().toLowerCase())
-    .find((value) => value.length > 0);
-
-  return title === TREES_WITH_STORIES_LAYER_TITLE;
+  return matchesPortalOrLayerId(layer, TREE_LAYER_PORTAL_ITEM_ID);
 }
 
 function setLayerVisibility(
@@ -302,7 +292,7 @@ function getAttributeValueByFieldName(
   return null;
 }
 
-function getGlobalId2FieldNameFromLayer(layer: unknown): string | null {
+function getGlobalIdFieldNameFromLayer(layer: unknown): string | null {
   if (!layer || typeof layer !== "object") {
     return null;
   }
@@ -322,7 +312,7 @@ function getGlobalId2FieldNameFromLayer(layer: unknown): string | null {
     const normalizedName = fieldName ? normalizeFieldToken(fieldName) : "";
     const normalizedAlias = fieldAlias ? normalizeFieldToken(fieldAlias) : "";
 
-    if (normalizedName === "globalid2" || normalizedAlias === "globalid2") {
+    if (normalizedName === "globalid" || normalizedAlias === "globalid") {
       return fieldName;
     }
   }
@@ -347,12 +337,12 @@ function getGlobalIdFromAttributes(
   }
   const typedAttributes = attributes as Record<string, unknown>;
 
-  const directGlobalId2 = coerceFieldValue(typedAttributes.GlobalID_2);
-  if (directGlobalId2) {
-    return directGlobalId2;
+  const directGlobalId = coerceFieldValue(typedAttributes.GlobalID);
+  if (directGlobalId) {
+    return directGlobalId;
   }
 
-  return getAttributeValueByFieldName(attributes, "GlobalID_2");
+  return getAttributeValueByFieldName(attributes, "GlobalID");
 }
 
 function getTreeIdFromGraphic(graphic: Graphic): string | null {
@@ -427,7 +417,7 @@ async function resolveGlobalIdFromGraphic(
   if (!layer) {
     return null;
   }
-  const preferredGlobalIdFieldName = getGlobalId2FieldNameFromLayer(layer);
+  const preferredGlobalIdFieldName = getGlobalIdFieldNameFromLayer(layer);
   const directGlobalId = getGlobalIdFromAttributes(
     graphic.attributes as unknown,
     preferredGlobalIdFieldName,
@@ -607,6 +597,76 @@ function configureLayerListLegendPanels(
       open: false,
     };
   };
+}
+
+function matchesPortalOrLayerId(
+  layerLike: unknown,
+  expectedId: string,
+): boolean {
+  if (!layerLike || typeof layerLike !== "object") {
+    return false;
+  }
+  const typed = layerLike as { id?: string; portalItem?: { id?: string } };
+  return typed.id === expectedId || typed.portalItem?.id === expectedId;
+}
+
+async function logAttachmentCapabilities(mapView: MapView): Promise<void> {
+  const map = mapView.map;
+  if (!map) {
+    return;
+  }
+
+  const treeLayerCandidate = map.allLayers.find((layer) =>
+    matchesPortalOrLayerId(layer, TREE_LAYER_PORTAL_ITEM_ID),
+  );
+
+  const mapWithTables = map as unknown as {
+    allTables?: { toArray?: () => unknown[] };
+  };
+  const tables = mapWithTables.allTables?.toArray?.() ?? [];
+  const storiesTableCandidate = tables.find((table) =>
+    matchesPortalOrLayerId(table, STORIES_TABLE_PORTAL_ITEM_ID),
+  );
+
+  const treeLayer = treeLayerCandidate as Layer & {
+    load?: () => Promise<unknown>;
+    hasAttachments?: boolean;
+    capabilities?: {
+      data?: { supportsAttachment?: boolean };
+      operations?: { supportsAdd?: boolean };
+      editing?: { supportsGlobalId?: boolean };
+    };
+  };
+  const storiesTable = storiesTableCandidate as Layer & {
+    load?: () => Promise<unknown>;
+    hasAttachments?: boolean;
+    capabilities?: {
+      data?: { supportsAttachment?: boolean };
+      operations?: { supportsAdd?: boolean };
+      editing?: { supportsGlobalId?: boolean };
+    };
+  };
+
+  await Promise.all([
+    treeLayer?.load?.(),
+    storiesTable?.load?.(),
+  ]);
+
+  // eslint-disable-next-line no-console
+  console.log("[AttachmentCapability] TREE", {
+    supportsAttachment: treeLayer?.capabilities?.data?.supportsAttachment ?? null,
+    hasAttachments: treeLayer?.hasAttachments ?? null,
+    supportsAdd: treeLayer?.capabilities?.operations?.supportsAdd ?? null,
+    supportsGlobalId: treeLayer?.capabilities?.editing?.supportsGlobalId ?? null,
+  });
+
+  // eslint-disable-next-line no-console
+  console.log("[AttachmentCapability] STORIES", {
+    supportsAttachment: storiesTable?.capabilities?.data?.supportsAttachment ?? null,
+    hasAttachments: storiesTable?.hasAttachments ?? null,
+    supportsAdd: storiesTable?.capabilities?.operations?.supportsAdd ?? null,
+    supportsGlobalId: storiesTable?.capabilities?.editing?.supportsGlobalId ?? null,
+  });
 }
 
 export function MapPlaceholder() {
@@ -817,6 +877,16 @@ export function MapPlaceholder() {
       storyLayerVisibilityWatchHandleRef.current?.remove();
       storyLayerVisibilityWatchHandleRef.current = null;
     };
+  }, [mapView]);
+
+  useEffect(() => {
+    if (!mapView || !import.meta.env.DEV) {
+      return;
+    }
+    void logAttachmentCapabilities(mapView).catch((cause: unknown) => {
+      // eslint-disable-next-line no-console
+      console.warn("[AttachmentCapability] Unable to log capabilities", cause);
+    });
   }, [mapView]);
 
   useEffect(() => {
@@ -1073,9 +1143,11 @@ export function MapPlaceholder() {
       } else {
         overlayLayer = new GraphicsLayerClass({
           id: TREE_STORY_OVERLAY_LAYER_ID,
+          listMode: "hide",
         });
         map.add(overlayLayer);
       }
+      overlayLayer.listMode = "hide";
       overlayLayer.visible = true;
 
       overlayLayer.removeAll();
@@ -1157,15 +1229,15 @@ export function MapPlaceholder() {
             autoDestroyDisabled={true}
             className="map-placeholder__search"
           />
+          <arcgis-home ref={homeElementRef} slot="top-right" />
+          <arcgis-zoom slot="top-right" />
+          <arcgis-fullscreen slot="top-right" />
           <arcgis-layer-list
             ref={layerListElementRef}
             slot="top-left"
             autoDestroyDisabled={true}
             className="map-placeholder__layer-list"
           />
-          <arcgis-home ref={homeElementRef} slot="top-right" />
-          <arcgis-zoom slot="top-right" />
-          <arcgis-fullscreen slot="top-right" />
         </arcgis-map>
       ) : (
         <div
