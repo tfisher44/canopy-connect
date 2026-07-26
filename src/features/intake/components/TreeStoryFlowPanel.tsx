@@ -378,7 +378,6 @@ export function TreeStoryFlowPanel() {
               {treeSelectionMessage}
             </p>
           ) : null}
-          {selectedTreeId ? <p className="tree-story-flow__location-chip">Tree selected.</p> : null}
           <div className="tree-story-flow__actions">
             <button type="button" className="button button--ghost" onClick={goBack}>
               Back

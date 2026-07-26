@@ -1,5 +1,6 @@
 import type FeatureLayer from "@arcgis/core/layers/FeatureLayer";
 import type MapView from "@arcgis/core/views/MapView";
+import type { AttachmentEdit, EditOptions } from "@arcgis/core/editing/types";
 
 export type CreateStoryInput = {
   mapView: MapView;
@@ -67,11 +68,15 @@ function findStoryTable(mapView: MapView): FeatureLayer {
   throw new Error(`Story table "${STORY_TABLE_ID}" was not found in the map.`);
 }
 
-function normalizeImageFieldValue(imageFiles: File[] | undefined): string {
-  if (!imageFiles || imageFiles.length === 0) {
-    return "";
+function createGlobalId(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
   }
-  return imageFiles.map((file) => file.name).join(", ");
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (char) => {
+    const randomValue = Math.floor(Math.random() * 16);
+    const value = char === "x" ? randomValue : (randomValue & 0x3) | 0x8;
+    return value.toString(16);
+  });
 }
 
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMessage: string): Promise<T> {
@@ -102,23 +107,67 @@ export async function createStory(input: CreateStoryInput): Promise<CreatedStory
 
   const { default: GraphicClass } = await import("@arcgis/core/Graphic");
 
+  const selectedFiles = input.imageFiles ?? [];
+  if (selectedFiles.length > 1) {
+    throw new Error("Only one story image is supported right now.");
+  }
+
+  const hasAttachment = selectedFiles.length === 1;
+  const storyFeatureGlobalId = createGlobalId();
+  const globalIdFieldName = storyTable.globalIdField;
+
+  if (hasAttachment && (!globalIdFieldName || globalIdFieldName.trim().length === 0)) {
+    throw new Error("Story table is missing a global ID field required for addAttachments.");
+  }
+
   const storyAttributes: Record<string, unknown> = {
     tree_global_id: input.treeId,
     story_name: input.title,
     story: input.details,
-    image: normalizeImageFieldValue(input.imageFiles),
     author_name: input.name ?? "",
     author_email: input.email ?? "",
   };
 
+  if (globalIdFieldName && globalIdFieldName.trim().length > 0) {
+    storyAttributes[globalIdFieldName] = storyFeatureGlobalId;
+  }
+
+  const addFeature = new GraphicClass({
+    attributes: storyAttributes,
+  });
+
+  const edits: {
+    addFeatures: InstanceType<typeof GraphicClass>[];
+    addAttachments?: AttachmentEdit[];
+  } = {
+    addFeatures: [addFeature],
+  };
+
+  if (hasAttachment) {
+    const imageFile = selectedFiles[0];
+    edits.addAttachments = [
+      {
+        feature: {
+          globalId: storyFeatureGlobalId,
+        },
+        attachment: {
+          globalId: createGlobalId(),
+          name: imageFile.name,
+          contentType: imageFile.type,
+          data: imageFile,
+        },
+      },
+    ];
+  }
+
+  const editOptions: EditOptions | undefined = hasAttachment
+    ? {
+        globalIdUsed: true,
+      }
+    : undefined;
+
   const editResult = await withTimeout(
-    storyTable.applyEdits({
-      addFeatures: [
-        new GraphicClass({
-          attributes: storyAttributes,
-        }),
-      ],
-    }),
+    storyTable.applyEdits(edits, editOptions),
     STORY_SUBMIT_TIMEOUT_MS,
     "Add story timed out while saving to the hosted table. Please try again.",
   );
@@ -130,6 +179,18 @@ export async function createStory(input: CreateStoryInput): Promise<CreatedStory
 
   if (addResult.error) {
     throw new Error(`Add story failed: ${addResult.error.message ?? "Unknown ArcGIS error."}`);
+  }
+
+  if (hasAttachment) {
+    const attachmentResult = editResult.addAttachmentResults.at(0);
+    if (!attachmentResult) {
+      throw new Error("Story was created, but attachment add result was missing.");
+    }
+    if (attachmentResult.error) {
+      throw new Error(
+        `Add story attachment failed: ${attachmentResult.error.message ?? "Unknown ArcGIS error."}`,
+      );
+    }
   }
 
   const createdId =
