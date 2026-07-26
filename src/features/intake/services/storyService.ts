@@ -90,7 +90,7 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMessage: st
       })
       .catch((cause) => {
         window.clearTimeout(timeoutId);
-        reject(cause);
+        reject(cause instanceof Error ? cause : new Error(String(cause)));
       });
   });
 }

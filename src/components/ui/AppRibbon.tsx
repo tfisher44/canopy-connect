@@ -16,14 +16,14 @@ export function AppRibbon({
   logoAlt = "",
 }: AppRibbonProps) {
   const hasLogo = typeof logoSrc === "string" && logoSrc.length > 0;
-  const titleClassName = logoSrc
-    ? "app-ribbon__title app-ribbon__title--visually-hidden"
+  const titleClassName = hasLogo
+    ? "app-ribbon__title app-ribbon__title--with-logo"
     : "app-ribbon__title";
   const brandLockupClassName = hasLogo
     ? "app-ribbon__brand-lockup app-ribbon__brand-lockup--with-logo"
     : "app-ribbon__brand-lockup";
   const subtitleClassName = hasLogo
-    ? "app-ribbon__subtitle app-ribbon__subtitle--under-logo"
+    ? "app-ribbon__subtitle app-ribbon__subtitle--with-logo"
     : "app-ribbon__subtitle";
 
   return (

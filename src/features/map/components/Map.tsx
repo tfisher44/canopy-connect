@@ -109,7 +109,7 @@ export function MapPlaceholder({ mapItemId = DEFAULT_WEBMAP_ID }: MapPlaceholder
     }
 
     setAuthorFilterLoading(true);
-    setAuthorFilterStatusMessage(`Finding trees for \"${authorName}\"...`);
+    setAuthorFilterStatusMessage(`Finding trees for "${authorName}"...`);
 
     try {
       const treeLayer = findFeatureLayerByPortalOrLayerId(
@@ -203,11 +203,11 @@ export function MapPlaceholder({ mapItemId = DEFAULT_WEBMAP_ID }: MapPlaceholder
 
       if (matchedTreeGlobalIds.length === 0) {
         setAuthorFilterStatusMessage(
-          `No trees found for author \"${authorName}\".`,
+          `No trees found for author "${authorName}".`,
         );
       } else {
         setAuthorFilterStatusMessage(
-          `Showing ${matchedTreeGlobalIds.length} tree${matchedTreeGlobalIds.length === 1 ? "" : "s"} for author \"${authorName}\".`,
+          `Showing ${matchedTreeGlobalIds.length} tree${matchedTreeGlobalIds.length === 1 ? "" : "s"} for author "${authorName}".`,
         );
       }
       setAuthorFilterApplied(true);
@@ -424,7 +424,6 @@ export function MapPlaceholder({ mapItemId = DEFAULT_WEBMAP_ID }: MapPlaceholder
       return;
     }
     void logAttachmentCapabilities(mapView).catch((cause: unknown) => {
-      // eslint-disable-next-line no-console
       console.warn("[AttachmentCapability] Unable to log capabilities", cause);
     });
   }, [mapView]);

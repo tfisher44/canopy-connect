@@ -155,7 +155,8 @@ export function AppShell({
       <AppRibbon
         title="Canopy Connect"
         subtitle="Plant stories, explore your canopy, and celebrate every tree."
-        logoSrc="/brand/canopy-logo.png"
+        logoSrc="/brand/canopy-mascot.png"
+        logoAlt="Canopy Connect mascot"
         action={
           isDefaultWorkflowPanel ? (
             <div className="runtime-shell__ribbon-actions">
