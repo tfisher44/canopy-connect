@@ -24,6 +24,7 @@ const { searchLocationsMock, zoomToLocationMock, runtimeMock } = vi.hoisted(
         setDraftTreeLocation: vi.fn(),
         setNewTreePlacementMessage: vi.fn(),
         addCreatedTree: vi.fn(),
+        clearCreatedTrees: vi.fn(),
         searchLocations,
         zoomToLocation,
       },

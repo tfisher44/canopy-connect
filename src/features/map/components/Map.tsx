@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import type Graphic from "@arcgis/core/Graphic";
 import esriConfig from "@arcgis/core/config";
+import type Point from "@arcgis/core/geometry/Point";
+import type Layer from "@arcgis/core/layers/Layer";
 import type WebMap from "@arcgis/core/WebMap";
 import type MapView from "@arcgis/core/views/MapView";
 import type GraphicsLayer from "@arcgis/core/layers/GraphicsLayer";
@@ -38,6 +40,38 @@ type LayerVisibilitySnapshot = {
   visible: boolean;
 };
 
+type QueryableLayer = {
+  objectIdField?: string;
+  fields?: Array<{ name?: string; alias?: string }>;
+  queryFeatures: (query: {
+    where: string;
+    outFields: string[];
+    returnGeometry: boolean;
+    geometry?: unknown;
+    spatialRelationship?: string;
+    num?: number;
+  }) => Promise<{
+    features?: Array<{
+      attributes?: unknown;
+    }>;
+  }>;
+};
+
+type QueryableLayerView = {
+  queryFeatures: (query: {
+    where: string;
+    outFields: string[];
+    returnGeometry: boolean;
+    geometry?: unknown;
+    spatialRelationship?: string;
+    num?: number;
+  }) => Promise<{
+    features?: Array<{
+      attributes?: unknown;
+    }>;
+  }>;
+};
+
 type PointSelectionVisibilitySnapshot = {
   mapView: MapView;
   basemap: WebMap["basemap"] | null;
@@ -66,6 +100,7 @@ function getErrorMessage(cause: unknown): string {
 }
 
 const STORY_ELIGIBLE_TREE_LAYER_ID = "story-eligible-trees";
+const TREES_WITH_STORIES_LAYER_TITLE = "trees with stories";
 const TREE_STORY_OVERLAY_LAYER_ID = "tree-story-workflow-overlay";
 const IMAGERY_KEYWORDS = ["imagery", "satellite", "aerial", "ortho"];
 const DRAFT_TREE_ID_PREFIX = "draft-tree-";
@@ -106,6 +141,22 @@ function isImageryLayer(layer: LayerWithVisibility): boolean {
   }
   const searchText = getLayerSearchText(layer);
   return IMAGERY_KEYWORDS.some((keyword) => searchText.includes(keyword));
+}
+
+function isStoryEligibleLayer(layer: LayerWithVisibility): boolean {
+  if (layer.id === STORY_ELIGIBLE_TREE_LAYER_ID) {
+    return true;
+  }
+
+  const title = [
+    typeof layer.title === "string" ? layer.title : null,
+    typeof layer.portalItem?.title === "string" ? layer.portalItem.title : null,
+  ]
+    .filter((value): value is string => value !== null)
+    .map((value) => value.trim().toLowerCase())
+    .find((value) => value.length > 0);
+
+  return title === TREES_WITH_STORIES_LAYER_TITLE;
 }
 
 function setLayerVisibility(
@@ -199,31 +250,334 @@ async function applyImageryOnlyVisibilityMode(
       setLayerVisibility(layer, true);
       return;
     }
+    if (isStoryEligibleLayer(layer)) {
+      setLayerVisibility(layer, true);
+      return;
+    }
     if (!isImageryLayer(layer)) {
       setLayerVisibility(layer, false);
     }
   });
 }
 
-function getTreeIdFromGraphic(graphic: Graphic): string | null {
-  const attributes = graphic.attributes as unknown;
+function normalizeFieldToken(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+function coerceFieldValue(value: unknown): string | null {
+  if (typeof value === "string" && value.trim().length > 0) {
+    return value;
+  }
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return String(value);
+  }
+  return null;
+}
+
+function getAttributeValueByFieldName(
+  attributes: unknown,
+  fieldName: string | null | undefined,
+): string | null {
+  if (!fieldName || !attributes || typeof attributes !== "object") {
+    return null;
+  }
+
+  const typedAttributes = attributes as Record<string, unknown>;
+  const directValue = coerceFieldValue(typedAttributes[fieldName]);
+  if (directValue) {
+    return directValue;
+  }
+
+  const normalizedFieldName = normalizeFieldToken(fieldName);
+  for (const [key, value] of Object.entries(typedAttributes)) {
+    if (normalizeFieldToken(key) !== normalizedFieldName) {
+      continue;
+    }
+    const coercedValue = coerceFieldValue(value);
+    if (coercedValue) {
+      return coercedValue;
+    }
+  }
+
+  return null;
+}
+
+function getGlobalId2FieldNameFromLayer(layer: unknown): string | null {
+  if (!layer || typeof layer !== "object") {
+    return null;
+  }
+
+  const fields = (layer as QueryableLayer).fields;
+  if (!Array.isArray(fields)) {
+    return null;
+  }
+
+  for (const field of fields) {
+    if (!field || typeof field !== "object") {
+      continue;
+    }
+
+    const fieldName = typeof field.name === "string" ? field.name : null;
+    const fieldAlias = typeof field.alias === "string" ? field.alias : null;
+    const normalizedName = fieldName ? normalizeFieldToken(fieldName) : "";
+    const normalizedAlias = fieldAlias ? normalizeFieldToken(fieldAlias) : "";
+
+    if (normalizedName === "globalid2" || normalizedAlias === "globalid2") {
+      return fieldName;
+    }
+  }
+
+  return null;
+}
+
+function getGlobalIdFromAttributes(
+  attributes: unknown,
+  preferredGlobalIdFieldName?: string | null,
+): string | null {
+  const preferredFieldValue = getAttributeValueByFieldName(
+    attributes,
+    preferredGlobalIdFieldName,
+  );
+  if (preferredFieldValue) {
+    return preferredFieldValue;
+  }
+
   if (!attributes || typeof attributes !== "object") {
     return null;
   }
   const typedAttributes = attributes as Record<string, unknown>;
 
-  const keys = ["treeId", "tree_id", "id", "OBJECTID", "ObjectId"] as const;
+  const directGlobalId2 = coerceFieldValue(typedAttributes.GlobalID_2);
+  if (directGlobalId2) {
+    return directGlobalId2;
+  }
+
+  return getAttributeValueByFieldName(attributes, "GlobalID_2");
+}
+
+function getTreeIdFromGraphic(graphic: Graphic): string | null {
+  return getGlobalIdFromAttributes(graphic.attributes as unknown);
+}
+
+function isQueryableLayer(layer: unknown): layer is QueryableLayer {
+  return (
+    typeof layer === "object" &&
+    layer !== null &&
+    "queryFeatures" in layer &&
+    typeof (layer as QueryableLayer).queryFeatures === "function"
+  );
+}
+
+function isQueryableLayerView(
+  layerView: unknown,
+): layerView is QueryableLayerView {
+  return (
+    typeof layerView === "object" &&
+    layerView !== null &&
+    "queryFeatures" in layerView &&
+    typeof (layerView as QueryableLayerView).queryFeatures === "function"
+  );
+}
+
+function getObjectIdFromAttributes(
+  attributes: unknown,
+  objectIdField?: string,
+): string | number | null {
+  if (!attributes || typeof attributes !== "object") {
+    return null;
+  }
+  const typedAttributes = attributes as Record<string, unknown>;
+  const keys = [
+    objectIdField,
+    "OBJECTID",
+    "ObjectId",
+    "objectid",
+    "FID",
+    "fid",
+    "id",
+  ].filter(
+    (value): value is string =>
+      typeof value === "string" && value.trim().length > 0,
+  );
   for (const key of keys) {
     const value = typedAttributes[key];
+    if (typeof value === "number" && Number.isFinite(value)) {
+      return value;
+    }
     if (typeof value === "string" && value.trim().length > 0) {
       return value;
     }
-    if (typeof value === "number" && Number.isFinite(value)) {
-      return String(value);
+  }
+  return null;
+}
+
+function escapeWhereValue(value: string): string {
+  return value.replace(/'/g, "''");
+}
+
+async function resolveGlobalIdFromGraphic(
+  graphic: Graphic | null | undefined,
+  mapView?: MapView | null,
+  fallbackGeometry?: Point | null,
+): Promise<string | null> {
+  if (!graphic) {
+    return null;
+  }
+  const layer = graphic.layer;
+  if (!layer) {
+    return null;
+  }
+  const preferredGlobalIdFieldName = getGlobalId2FieldNameFromLayer(layer);
+  const directGlobalId = getGlobalIdFromAttributes(
+    graphic.attributes as unknown,
+    preferredGlobalIdFieldName,
+  );
+  if (directGlobalId) {
+    return directGlobalId;
+  }
+
+  if (isQueryableLayer(layer)) {
+    const objectIdField =
+      typeof layer.objectIdField === "string" &&
+      layer.objectIdField.trim().length > 0
+        ? layer.objectIdField
+        : "OBJECTID";
+    const objectId = getObjectIdFromAttributes(
+      graphic.attributes as unknown,
+      objectIdField,
+    );
+    if (objectId !== null) {
+      const where =
+        typeof objectId === "number"
+          ? `${objectIdField} = ${objectId}`
+          : `${objectIdField} = '${escapeWhereValue(objectId)}'`;
+      const response = await layer.queryFeatures({
+        where,
+        outFields: ["*"],
+        returnGeometry: false,
+        num: 1,
+      });
+      const queriedAttributes = response.features?.[0]?.attributes;
+      const queriedGlobalId = getGlobalIdFromAttributes(
+        queriedAttributes,
+        preferredGlobalIdFieldName,
+      );
+      if (queriedGlobalId) {
+        return queriedGlobalId;
+      }
     }
   }
 
-  return null;
+  if (!mapView) {
+    return null;
+  }
+
+  const layerViewCandidate = await mapView.whenLayerView(layer as Layer);
+  if (!isQueryableLayerView(layerViewCandidate)) {
+    return null;
+  }
+
+  const geometry = graphic.geometry ?? fallbackGeometry ?? null;
+  if (!geometry) {
+    return null;
+  }
+
+  const viewResponse = await layerViewCandidate.queryFeatures({
+    where: "1=1",
+    geometry,
+    spatialRelationship: "intersects",
+    outFields: ["*"],
+    returnGeometry: false,
+    num: 1,
+  });
+  return getGlobalIdFromAttributes(
+    viewResponse.features?.[0]?.attributes,
+    preferredGlobalIdFieldName,
+  );
+}
+
+function setSelectedGlobalIdState(
+  globalId: string,
+  selectedTreeId: string | null,
+  setSelectedTreeId: (treeId: string | null) => void,
+  setTreeSelectionMessage: (message: string) => void,
+): void {
+  if (selectedTreeId !== globalId) {
+    setSelectedTreeId(globalId);
+  }
+  setTreeSelectionMessage(`Selected tree global ID: ${globalId}.`);
+}
+
+function setNoSelectionState(
+  selectedTreeId: string | null,
+  setTreeSelectionMessage: (message: string) => void,
+  noSelectionMessage = `No tree selected. Click a point on "${TREES_WITH_STORIES_LAYER_TITLE}".`,
+): void {
+  if (selectedTreeId) {
+    setTreeSelectionMessage(
+      `Selected tree global ID: ${selectedTreeId}. Click another point on "${TREES_WITH_STORIES_LAYER_TITLE}" to change it.`,
+    );
+    return;
+  }
+
+  setTreeSelectionMessage(noSelectionMessage);
+}
+
+function logSelectedTreeGraphicProperties(
+  graphic: Graphic,
+  source: "hitTest" | "popup",
+): void {
+  const attributes =
+    graphic.attributes && typeof graphic.attributes === "object"
+      ? (graphic.attributes as Record<string, unknown>)
+      : null;
+  const layer = graphic.layer as LayerWithVisibility | undefined;
+  const extractedTreeId = getTreeIdFromGraphic(graphic);
+
+  // eslint-disable-next-line no-console
+  console.info("[TreeSelectionDebug] selected feature", {
+    layer,
+    source,
+    layerId: layer?.id ?? null,
+    layerTitle: layer?.title ?? layer?.portalItem?.title ?? null,
+    extractedTreeId,
+    attributes,
+    attributeKeys: attributes ? Object.keys(attributes) : [],
+  });
+}
+
+function logPopupDetails(mapView: MapView): void {
+  const popup = mapView.popup;
+  const selectedFeature = popup?.selectedFeature;
+  const layer = selectedFeature?.layer as
+    | (LayerWithVisibility & {
+        fields?: Array<{ name?: string; alias?: string; type?: string }>;
+      })
+    | undefined;
+  const attributes =
+    selectedFeature?.attributes &&
+    typeof selectedFeature.attributes === "object"
+      ? (selectedFeature.attributes as Record<string, unknown>)
+      : null;
+  const layerFields = Array.isArray(layer?.fields)
+    ? layer.fields.map((field) => ({
+        name: field.name ?? null,
+        alias: field.alias ?? null,
+        type: field.type ?? null,
+      }))
+    : [];
+
+  // eslint-disable-next-line no-console
+  console.info("[TreeSelectionDebug] popup details", {
+    selectedFeatureExists: Boolean(selectedFeature),
+    visible: popup?.visible ?? null,
+    title: popup?.title ?? null,
+    selectedFeatureLayerId: layer?.id ?? null,
+    selectedFeatureLayerTitle: layer?.title ?? layer?.portalItem?.title ?? null,
+    selectedFeatureAttributes: attributes,
+    selectedFeatureAttributeKeys: attributes ? Object.keys(attributes) : [],
+    layerFields,
+  });
 }
 
 function bindSearchToMap(
@@ -280,9 +634,24 @@ export function MapPlaceholder() {
     useRef<PointSelectionVisibilitySnapshot | null>(null);
   const layerListElementRef = useRef<ArcgisLayerList | null>(null);
   const homeElementRef = useRef<ArcgisHome | null>(null);
+  const selectedTreeIdRef = useRef<string | null>(selectedTreeId);
+  const setSelectedTreeIdRef = useRef(setSelectedTreeId);
+  const setTreeSelectionMessageRef = useRef(setTreeSelectionMessage);
   const [componentsReady, setComponentsReady] = useState(
     import.meta.env.MODE === "test",
   );
+  const storyLayerVisibilityWatchHandleRef = useRef<{
+    remove: () => void;
+  } | null>(null);
+
+  useEffect(() => {
+    selectedTreeIdRef.current = selectedTreeId;
+  }, [selectedTreeId]);
+
+  useEffect(() => {
+    setSelectedTreeIdRef.current = setSelectedTreeId;
+    setTreeSelectionMessageRef.current = setTreeSelectionMessage;
+  }, [setSelectedTreeId, setTreeSelectionMessage]);
 
   useEffect(() => {
     let isMounted = true;
@@ -391,10 +760,7 @@ export function MapPlaceholder() {
     mapElement.addEventListener("arcgisViewReadyChange", handleViewReady);
     mapElement.addEventListener("arcgisLoadError", handleLoadError);
     searchElement?.addEventListener("arcgisReady", handleSearchReady);
-    layerListElement?.addEventListener(
-      "arcgisReady",
-      handleLayerListReady,
-    );
+    layerListElement?.addEventListener("arcgisReady", handleLayerListReady);
 
     return () => {
       isMounted = false;
@@ -410,6 +776,48 @@ export function MapPlaceholder() {
     // Mount/unmount lifecycle is intentional for ArcGIS component wiring.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [componentsReady]);
+
+  useEffect(() => {
+    if (!mapView?.map) {
+      storyLayerVisibilityWatchHandleRef.current?.remove();
+      storyLayerVisibilityWatchHandleRef.current = null;
+      return;
+    }
+
+    const layers = mapView.map.layers.toArray() as LayerWithVisibility[];
+    const storyEligibleLayer = layers.find(isStoryEligibleLayer);
+    if (!storyEligibleLayer) {
+      storyLayerVisibilityWatchHandleRef.current?.remove();
+      storyLayerVisibilityWatchHandleRef.current = null;
+      return;
+    }
+
+    setLayerVisibility(storyEligibleLayer, true);
+    storyLayerVisibilityWatchHandleRef.current?.remove();
+    storyLayerVisibilityWatchHandleRef.current = null;
+
+    let isDisposed = false;
+    void import("@arcgis/core/core/reactiveUtils").then(({ watch }) => {
+      if (isDisposed) {
+        return;
+      }
+      const handle = watch(
+        () => storyEligibleLayer.visible,
+        (visible) => {
+          if (visible !== true) {
+            setLayerVisibility(storyEligibleLayer, true);
+          }
+        },
+      );
+      storyLayerVisibilityWatchHandleRef.current = handle;
+    });
+
+    return () => {
+      isDisposed = true;
+      storyLayerVisibilityWatchHandleRef.current?.remove();
+      storyLayerVisibilityWatchHandleRef.current = null;
+    };
+  }, [mapView]);
 
   useEffect(() => {
     if (!mapView || !treeSelectionEnabled) {
@@ -428,41 +836,119 @@ export function MapPlaceholder() {
         const graphicHit = hit.results.find(
           (result) =>
             "graphic" in result &&
-            result.graphic.layer?.id === STORY_ELIGIBLE_TREE_LAYER_ID &&
-            getTreeIdFromGraphic(result.graphic) !== null,
+            isStoryEligibleLayer(result.graphic.layer as LayerWithVisibility),
+        );
+        const selectedGraphic =
+          graphicHit && "graphic" in graphicHit ? graphicHit.graphic : null;
+        const popupGraphic = mapView.popup?.selectedFeature;
+        logPopupDetails(mapView);
+        const popupSelectedGlobalId = await resolveGlobalIdFromGraphic(
+          popupGraphic,
+          mapView,
+          event.mapPoint ?? null,
         );
 
-        if (!graphicHit || !("graphic" in graphicHit)) {
-          setSelectedTreeId(null);
-          setTreeSelectionMessage(
-            `No story-eligible tree selected. Click a tree on layer "${STORY_ELIGIBLE_TREE_LAYER_ID}".`,
+        if (!selectedGraphic) {
+          if (popupSelectedGlobalId) {
+            setSelectedGlobalIdState(
+              popupSelectedGlobalId,
+              selectedTreeIdRef.current,
+              setSelectedTreeIdRef.current,
+              setTreeSelectionMessageRef.current,
+            );
+            return;
+          }
+          setNoSelectionState(
+            selectedTreeIdRef.current,
+            setTreeSelectionMessageRef.current,
           );
           return;
         }
 
-        const treeId = getTreeIdFromGraphic(graphicHit.graphic);
-        if (!treeId) {
-          setSelectedTreeId(null);
-          setTreeSelectionMessage(
-            "Selected feature is missing a valid tree id.",
+        logSelectedTreeGraphicProperties(selectedGraphic, "hitTest");
+
+        const globalId = await resolveGlobalIdFromGraphic(
+          selectedGraphic,
+          mapView,
+          event.mapPoint ?? null,
+        );
+        if (!globalId) {
+          if (popupSelectedGlobalId) {
+            setSelectedGlobalIdState(
+              popupSelectedGlobalId,
+              selectedTreeIdRef.current,
+              setSelectedTreeIdRef.current,
+              setTreeSelectionMessageRef.current,
+            );
+            return;
+          }
+          setNoSelectionState(
+            selectedTreeIdRef.current,
+            setTreeSelectionMessageRef.current,
+            "GlobalID not found. Ensure the layer has Global IDs enabled.",
           );
           return;
         }
 
-        setSelectedTreeId(treeId);
-        setTreeSelectionMessage(`Selected tree ${treeId}.`);
+        setSelectedGlobalIdState(
+          globalId,
+          selectedTreeIdRef.current,
+          setSelectedTreeIdRef.current,
+          setTreeSelectionMessageRef.current,
+        );
       })();
     });
 
     return () => {
       clickHandle.remove();
     };
-  }, [
-    mapView,
-    setSelectedTreeId,
-    setTreeSelectionMessage,
-    treeSelectionEnabled,
-  ]);
+  }, [mapView, treeSelectionEnabled]);
+
+  useEffect(() => {
+    if (!mapView || !treeSelectionEnabled) {
+      return;
+    }
+
+    let isDisposed = false;
+    let popupWatchHandle: { remove: () => void } | null = null;
+
+    const handlePopupSelectedFeatureChange = async (
+      feature: Graphic | null | undefined,
+    ): Promise<void> => {
+      logPopupDetails(mapView);
+      const globalId = await resolveGlobalIdFromGraphic(feature, mapView, null);
+      if (isDisposed || !globalId) {
+        return;
+      }
+      setSelectedGlobalIdState(
+        globalId,
+        selectedTreeIdRef.current,
+        setSelectedTreeIdRef.current,
+        setTreeSelectionMessageRef.current,
+      );
+    };
+
+    void handlePopupSelectedFeatureChange(
+      mapView.popup?.selectedFeature ?? null,
+    );
+
+    void import("@arcgis/core/core/reactiveUtils").then(({ watch }) => {
+      if (isDisposed) {
+        return;
+      }
+      popupWatchHandle = watch(
+        () => mapView.popup?.selectedFeature,
+        (feature) => {
+          void handlePopupSelectedFeatureChange(feature);
+        },
+      );
+    });
+
+    return () => {
+      isDisposed = true;
+      popupWatchHandle?.remove();
+    };
+  }, [mapView, treeSelectionEnabled]);
 
   useEffect(() => {
     if (!mapView || !newTreePlacementEnabled) {
@@ -594,7 +1080,9 @@ export function MapPlaceholder() {
 
       overlayLayer.removeAll();
 
-      for (const tree of createdTrees.filter((candidate) => !isDraftTreeId(candidate.id))) {
+      for (const tree of createdTrees.filter(
+        (candidate) => !isDraftTreeId(candidate.id),
+      )) {
         overlayLayer.add(
           new GraphicClass({
             geometry: {

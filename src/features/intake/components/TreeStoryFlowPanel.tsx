@@ -72,6 +72,7 @@ export function TreeStoryFlowPanel() {
     setDraftTreeLocation,
     setNewTreePlacementMessage,
     addCreatedTree,
+    clearCreatedTrees,
     searchLocations,
     zoomToLocation,
   } = useMapRuntime();
@@ -95,6 +96,7 @@ export function TreeStoryFlowPanel() {
     setDraftTreeLocation(null);
     setNewTreePlacementEnabled(false);
     setNewTreePlacementMessage(null);
+    clearCreatedTrees();
   };
 
   const handleLocationQueryChange = (value: string) => {
@@ -374,6 +376,12 @@ export function TreeStoryFlowPanel() {
           {treeSelectionMessage ? (
             <p className="muted" role="status" aria-live="polite">
               {treeSelectionMessage}
+            </p>
+          ) : null}
+          {selectedTreeId ? (
+            <p className="tree-story-flow__location-chip">
+              <span className="muted">Selected tree GlobalID_2</span>
+              <strong>{selectedTreeId}</strong>
             </p>
           ) : null}
           <div className="tree-story-flow__actions">
