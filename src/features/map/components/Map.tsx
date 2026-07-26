@@ -48,171 +48,13 @@ if (typeof arcgisApiKey === "string" && arcgisApiKey.trim().length > 0) {
   esriConfig.apiKey = arcgisApiKey;
 }
 
-type ArcgisMapRuntimeTarget = ArcgisMap & {
-  map: WebMap | null;
-  view: MapView | null;
-};
-
-type LayerWithVisibility = {
-  id?: string;
-  type?: string;
-  title?: string;
-  visible?: boolean;
-  portalItem?: {
-    title?: string;
-    id?: string;
-  };
-  set?: (propertyName: "visible", value: boolean) => void;
-};
-
-type LayerVisibilitySnapshot = {
-  layer: LayerWithVisibility;
-  visible: boolean;
-};
-
-type QueryableLayer = {
-  objectIdField?: string;
-  fields?: Array<{ name?: string; alias?: string }>;
-  queryFeatures: (query: {
-    where: string;
-    outFields: string[];
-    returnGeometry: boolean;
-    geometry?: unknown;
-    spatialRelationship?: string;
-    num?: number;
-  }) => Promise<{
-    features?: Array<{
-      attributes?: unknown;
-    }>;
-  }>;
-};
-
-type QueryableLayerView = {
-  queryFeatures: (query: {
-    where: string;
-    outFields: string[];
-    returnGeometry: boolean;
-    geometry?: unknown;
-    spatialRelationship?: string;
-    num?: number;
-  }) => Promise<{
-    features?: Array<{
-      attributes?: unknown;
-    }>;
-  }>;
-};
-
-type PointSelectionVisibilitySnapshot = {
-  mapView: MapView;
-  basemap: WebMap["basemap"] | null;
-  layers: LayerVisibilitySnapshot[];
-};
-
-function isArcgisMapRuntimeTarget(
-  target: EventTarget | null,
-): target is ArcgisMapRuntimeTarget {
-  return (
-    typeof target === "object" &&
-    target !== null &&
-    "map" in target &&
-    "view" in target
-  );
-}
-
-function getErrorMessage(cause: unknown): string {
-  if (cause instanceof Error && cause.message) {
-    return cause.message;
-  }
-  if (typeof cause === "string" && cause.trim().length > 0) {
-    return cause;
-  }
-  return "Failed to load map.";
-}
-
-const TREES_WITH_STORIES_LAYER_TITLE = "trees with stories";
-const TREE_STORY_OVERLAY_LAYER_ID = "tree-story-workflow-overlay";
-const TREE_LAYER_PORTAL_ITEM_ID = "9424d21bd45345ffbd5a1736941ed88d";
-const STORIES_TABLE_PORTAL_ITEM_ID = "8c367ee0703d4c6abc010df5a69c8aae";
-const IMAGERY_KEYWORDS = ["imagery", "satellite", "aerial", "ortho"];
-const DRAFT_TREE_ID_PREFIX = "draft-tree-";
-const DRAFT_TREE_MARKER_ICON_URL =
-  "https://img.icons8.com/isometric/100/deciduous-tree.png";
-const DEFAULT_ZOOM_LEVEL = 5;
-const DEFAULT_CENTER = {
-  latitude: 37.16611,
-  longitude: -119.44944,
-};
 const DEFAULT_WEBMAP_ID = "20712c612e0149c99d32354f089881c4";
 
-function isDraftTreeId(treeId: string): boolean {
-  return treeId.startsWith(DRAFT_TREE_ID_PREFIX);
-}
+type MapPlaceholderProps = {
+  mapItemId?: string;
+};
 
-function getBasemapLayers(mapView: MapView): LayerWithVisibility[] {
-  const baseLayers = mapView.map?.basemap?.baseLayers?.toArray() ?? [];
-  const referenceLayers =
-    mapView.map?.basemap?.referenceLayers?.toArray() ?? [];
-  return [...baseLayers, ...referenceLayers] as LayerWithVisibility[];
-}
-
-function getLayerSearchText(layer: LayerWithVisibility): string {
-  const values = [layer.id, layer.title, layer.portalItem?.title]
-    .filter(
-      (value): value is string =>
-        typeof value === "string" && value.trim().length > 0,
-    )
-    .map((value) => value.toLowerCase());
-  return values.join(" ");
-}
-
-function isImageryLayer(layer: LayerWithVisibility): boolean {
-  const typeName =
-    typeof layer.type === "string" ? layer.type.toLowerCase() : "";
-  if (typeName.includes("imagery")) {
-    return true;
-  }
-  const searchText = getLayerSearchText(layer);
-  return IMAGERY_KEYWORDS.some((keyword) => searchText.includes(keyword));
-}
-
-function isStoryEligibleLayer(layer: LayerWithVisibility): boolean {
-  return matchesPortalOrLayerId(layer, TREE_LAYER_PORTAL_ITEM_ID);
-}
-
-function setLayerVisibility(
-  layer: LayerWithVisibility,
-  visible: boolean,
-): void {
-  if (typeof layer.set === "function") {
-    layer.set("visible", visible);
-    return;
-  }
-  layer.visible = visible;
-}
-
-function capturePointSelectionVisibilitySnapshot(
-  mapView: MapView,
-): PointSelectionVisibilitySnapshot {
-  const map = mapView.map;
-  const basemap = map?.basemap ?? null;
-  const layers = [
-    ...getBasemapLayers(mapView),
-    ...((map?.layers.toArray() as LayerWithVisibility[]) ?? []),
-  ].map((layer) => ({
-    layer,
-    visible: layer.visible === true,
-  }));
-  return { mapView, basemap, layers };
-}
-
-function restorePointSelectionVisibilitySnapshot(
-  snapshot: PointSelectionVisibilitySnapshot,
-): void {
-  const map = snapshot.mapView.map;
-  if (!map) {
-    return;
-  }
-export function MapPlaceholder() {
+export function MapPlaceholder({ mapItemId = DEFAULT_WEBMAP_ID }: MapPlaceholderProps) {
   const {
     error,
     mapView,
@@ -395,204 +237,6 @@ export function MapPlaceholder() {
       return;
     }
 
-  setTreeSelectionMessage(noSelectionMessage);
-}
-
-function logSelectedTreeGraphicProperties(
-  graphic: Graphic,
-  source: "hitTest" | "popup",
-): void {
-  const attributes =
-    graphic.attributes && typeof graphic.attributes === "object"
-      ? (graphic.attributes as Record<string, unknown>)
-      : null;
-  const layer = graphic.layer as LayerWithVisibility | undefined;
-  const extractedTreeId = getTreeIdFromGraphic(graphic);
-
-  // eslint-disable-next-line no-console
-  console.info("[TreeSelectionDebug] selected feature", {
-    layer,
-    source,
-    layerId: layer?.id ?? null,
-    layerTitle: layer?.title ?? layer?.portalItem?.title ?? null,
-    extractedTreeId,
-    attributes,
-    attributeKeys: attributes ? Object.keys(attributes) : [],
-  });
-}
-
-function logPopupDetails(mapView: MapView): void {
-  const popup = mapView.popup;
-  const selectedFeature = popup?.selectedFeature;
-  const layer = selectedFeature?.layer as
-    | (LayerWithVisibility & {
-        fields?: Array<{ name?: string; alias?: string; type?: string }>;
-      })
-    | undefined;
-  const attributes =
-    selectedFeature?.attributes &&
-    typeof selectedFeature.attributes === "object"
-      ? (selectedFeature.attributes as Record<string, unknown>)
-      : null;
-  const layerFields = Array.isArray(layer?.fields)
-    ? layer.fields.map((field) => ({
-        name: field.name ?? null,
-        alias: field.alias ?? null,
-        type: field.type ?? null,
-      }))
-    : [];
-
-  // eslint-disable-next-line no-console
-  console.info("[TreeSelectionDebug] popup details", {
-    selectedFeatureExists: Boolean(selectedFeature),
-    visible: popup?.visible ?? null,
-    title: popup?.title ?? null,
-    selectedFeatureLayerId: layer?.id ?? null,
-    selectedFeatureLayerTitle: layer?.title ?? layer?.portalItem?.title ?? null,
-    selectedFeatureAttributes: attributes,
-    selectedFeatureAttributeKeys: attributes ? Object.keys(attributes) : [],
-    layerFields,
-  });
-}
-
-function bindSearchToMap(
-  mapElement: ArcgisMap,
-  searchElement: ArcgisSearch | null,
-): void {
-  if (!searchElement) {
-    return;
-  }
-
-  searchElement.referenceElement = mapElement;
-  if (mapElement.view) {
-    searchElement.view = mapElement.view;
-  }
-}
-
-function configureLayerListLegendPanels(
-  layerListElement: ArcgisLayerList | null,
-): void {
-  if (!layerListElement) {
-    return;
-  }
-
-  layerListElement.listItemCreatedFunction = (event: { item: ListItem }) => {
-    event.item.panel = {
-      content: "legend",
-      open: false,
-    };
-  };
-}
-
-function matchesPortalOrLayerId(
-  layerLike: unknown,
-  expectedId: string,
-): boolean {
-  if (!layerLike || typeof layerLike !== "object") {
-    return false;
-  }
-  const typed = layerLike as { id?: string; portalItem?: { id?: string } };
-  return typed.id === expectedId || typed.portalItem?.id === expectedId;
-}
-
-async function logAttachmentCapabilities(mapView: MapView): Promise<void> {
-  const map = mapView.map;
-  if (!map) {
-    return;
-  }
-
-  const treeLayerCandidate = map.allLayers.find((layer) =>
-    matchesPortalOrLayerId(layer, TREE_LAYER_PORTAL_ITEM_ID),
-  );
-
-  const mapWithTables = map as unknown as {
-    allTables?: { toArray?: () => unknown[] };
-  };
-  const tables = mapWithTables.allTables?.toArray?.() ?? [];
-  const storiesTableCandidate = tables.find((table) =>
-    matchesPortalOrLayerId(table, STORIES_TABLE_PORTAL_ITEM_ID),
-  );
-
-  const treeLayer = treeLayerCandidate as Layer & {
-    load?: () => Promise<unknown>;
-    hasAttachments?: boolean;
-    capabilities?: {
-      data?: { supportsAttachment?: boolean };
-      operations?: { supportsAdd?: boolean };
-      editing?: { supportsGlobalId?: boolean };
-    };
-  };
-  const storiesTable = storiesTableCandidate as Layer & {
-    load?: () => Promise<unknown>;
-    hasAttachments?: boolean;
-    capabilities?: {
-      data?: { supportsAttachment?: boolean };
-      operations?: { supportsAdd?: boolean };
-      editing?: { supportsGlobalId?: boolean };
-    };
-  };
-
-  await Promise.all([treeLayer?.load?.(), storiesTable?.load?.()]);
-
-  // eslint-disable-next-line no-console
-  console.log("[AttachmentCapability] TREE", {
-    supportsAttachment:
-      treeLayer?.capabilities?.data?.supportsAttachment ?? null,
-    hasAttachments: treeLayer?.hasAttachments ?? null,
-    supportsAdd: treeLayer?.capabilities?.operations?.supportsAdd ?? null,
-    supportsGlobalId:
-      treeLayer?.capabilities?.editing?.supportsGlobalId ?? null,
-  });
-
-  // eslint-disable-next-line no-console
-  console.log("[AttachmentCapability] STORIES", {
-    supportsAttachment:
-      storiesTable?.capabilities?.data?.supportsAttachment ?? null,
-    hasAttachments: storiesTable?.hasAttachments ?? null,
-    supportsAdd: storiesTable?.capabilities?.operations?.supportsAdd ?? null,
-    supportsGlobalId:
-      storiesTable?.capabilities?.editing?.supportsGlobalId ?? null,
-  });
-}
-
-type MapPlaceholderProps = {
-  mapItemId?: string;
-};
-
-export function MapPlaceholder({ mapItemId = DEFAULT_WEBMAP_ID }: MapPlaceholderProps) {
-  const {
-    error,
-    mapView,
-    selectedTreeId,
-    treeSelectionEnabled,
-    newTreePlacementEnabled,
-    pointSelectionVisibilityModeEnabled,
-    draftTreeLocation,
-    createdTrees,
-    setLoading,
-    setReady,
-    setError,
-    detachMapRuntime,
-    setSelectedTreeId,
-    setTreeSelectionMessage,
-    setDraftTreeLocation,
-    setNewTreePlacementMessage,
-  } = useMapRuntime();
-  const mapElementRef = useRef<ArcgisMap | null>(null);
-  const searchElementRef = useRef<ArcgisSearch | null>(null);
-  const pointSelectionVisibilitySnapshotRef =
-    useRef<PointSelectionVisibilitySnapshot | null>(null);
-  const layerListElementRef = useRef<ArcgisLayerList | null>(null);
-  const homeElementRef = useRef<ArcgisHome | null>(null);
-  const selectedTreeIdRef = useRef<string | null>(selectedTreeId);
-  const setSelectedTreeIdRef = useRef(setSelectedTreeId);
-  const setTreeSelectionMessageRef = useRef(setTreeSelectionMessage);
-  const [componentsReady, setComponentsReady] = useState(
-    import.meta.env.MODE === "test",
-  );
-  const storyLayerVisibilityWatchHandleRef = useRef<{
-    remove: () => void;
-  } | null>(null);
     treeLayer.definitionExpression =
       initialTreeDefinitionExpressionRef.current ?? undefined;
     setAuthorFilterApplied(false);
@@ -1154,7 +798,10 @@ export function MapPlaceholder({ mapItemId = DEFAULT_WEBMAP_ID }: MapPlaceholder
             </button>
             {findMyTreesExpanded ? (
               <div className="map-placeholder__find-my-trees-panel">
-                <label htmlFor="find-my-trees-author" className="map-placeholder__find-my-trees-label">
+                <label
+                  htmlFor="find-my-trees-author"
+                  className="map-placeholder__find-my-trees-label"
+                >
                   Author name
                 </label>
                 <input
@@ -1172,7 +819,9 @@ export function MapPlaceholder({ mapItemId = DEFAULT_WEBMAP_ID }: MapPlaceholder
                   <button
                     type="button"
                     className="button"
-                    disabled={authorFilterLoading || authorFilterInput.trim().length === 0}
+                    disabled={
+                      authorFilterLoading || authorFilterInput.trim().length === 0
+                    }
                     onClick={() => {
                       void applyAuthorTreeFilter();
                     }}
@@ -1189,7 +838,11 @@ export function MapPlaceholder({ mapItemId = DEFAULT_WEBMAP_ID }: MapPlaceholder
                   </button>
                 </div>
                 {authorFilterStatusMessage ? (
-                  <p className="map-placeholder__find-my-trees-status" role="status" aria-live="polite">
+                  <p
+                    className="map-placeholder__find-my-trees-status"
+                    role="status"
+                    aria-live="polite"
+                  >
                     {authorFilterStatusMessage}
                   </p>
                 ) : null}
@@ -1212,7 +865,7 @@ export function MapPlaceholder({ mapItemId = DEFAULT_WEBMAP_ID }: MapPlaceholder
           role="status"
           aria-live="polite"
         >
-          Loading map…
+          Loading map...
         </div>
       )}
     </section>
