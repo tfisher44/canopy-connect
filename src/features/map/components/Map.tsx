@@ -647,25 +647,26 @@ async function logAttachmentCapabilities(mapView: MapView): Promise<void> {
     };
   };
 
-  await Promise.all([
-    treeLayer?.load?.(),
-    storiesTable?.load?.(),
-  ]);
+  await Promise.all([treeLayer?.load?.(), storiesTable?.load?.()]);
 
   // eslint-disable-next-line no-console
   console.log("[AttachmentCapability] TREE", {
-    supportsAttachment: treeLayer?.capabilities?.data?.supportsAttachment ?? null,
+    supportsAttachment:
+      treeLayer?.capabilities?.data?.supportsAttachment ?? null,
     hasAttachments: treeLayer?.hasAttachments ?? null,
     supportsAdd: treeLayer?.capabilities?.operations?.supportsAdd ?? null,
-    supportsGlobalId: treeLayer?.capabilities?.editing?.supportsGlobalId ?? null,
+    supportsGlobalId:
+      treeLayer?.capabilities?.editing?.supportsGlobalId ?? null,
   });
 
   // eslint-disable-next-line no-console
   console.log("[AttachmentCapability] STORIES", {
-    supportsAttachment: storiesTable?.capabilities?.data?.supportsAttachment ?? null,
+    supportsAttachment:
+      storiesTable?.capabilities?.data?.supportsAttachment ?? null,
     hasAttachments: storiesTable?.hasAttachments ?? null,
     supportsAdd: storiesTable?.capabilities?.operations?.supportsAdd ?? null,
-    supportsGlobalId: storiesTable?.capabilities?.editing?.supportsGlobalId ?? null,
+    supportsGlobalId:
+      storiesTable?.capabilities?.editing?.supportsGlobalId ?? null,
   });
 }
 
@@ -1217,6 +1218,7 @@ export function MapPlaceholder() {
       {error ? <p className="error">{error.message}</p> : null}
       {componentsReady ? (
         <arcgis-map
+          id="main-map"
           ref={mapElementRef}
           className="map-placeholder__viewport"
           item-id="20712c612e0149c99d32354f089881c4"

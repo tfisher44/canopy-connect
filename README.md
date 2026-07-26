@@ -1,6 +1,7 @@
 # Canopy Connect Starter
 
 Minimal starter scaffold for:
+
 - React + TypeScript (Vite)
 - React Router
 - React Hook Form + Zod validation
@@ -8,6 +9,7 @@ Minimal starter scaffold for:
 - ArcGIS SDK placeholder integration surface
 
 ## Routes
+
 - `/` Main shell view (map hero with workflow panel collapsed by default)
 - `/form` Alias route to the main shell
 - `/map` Alias route to the main shell
@@ -15,6 +17,7 @@ Minimal starter scaffold for:
 - `*` Fallback route to the main shell
 
 ## Appearance system
+
 - Built-in themes: Aurora, Canopy Dusk, Sunset Neon, Midnight Bloom, Ember Mist, Verdant Glow
 - Color modes: `dark` and `light`
 - Defaults: `verdant-glow` + `light`
@@ -26,11 +29,13 @@ Minimal starter scaffold for:
   - Dark/Light mode toggle
 
 ## UI shell structure
+
 - Fixed ribbon header for branding and appearance controls
 - Main map hero region as the primary canvas
 - Right-side workflow panel that can be toggled open/closed
 
 ## Scripts
+
 - `pnpm dev` start local dev server
 - `pnpm build` production build
 - `pnpm preview` preview built app
@@ -39,6 +44,7 @@ Minimal starter scaffold for:
 - `pnpm test` run Vitest
 
 ## Getting started
+
 ```bash
 pnpm install
 pnpm dev
@@ -85,6 +91,7 @@ Optional quality gates:
 - `/speckit.converge`
 
 ## ArcGIS references for next phase
+
 - https://github.com/Esri/jsapi-resources/tree/main/templates/ai-components-custom-agent-hil-react
 - https://github.com/Esri/jsapi-resources/blob/main/templates/ai-components-custom-agent-hil-react/src/maintenanceAgent.ts#L187-L218
 - https://github.com/omarkawach/esri-conferences/tree/main/UC-2026/programming-patterns-and-best-practices

@@ -375,6 +375,10 @@
 }
 
 .matte-sidebar {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   border-radius: 1rem;
   border: 1px solid transparent;
   background:
@@ -695,4 +699,134 @@ h3 {
 .tree-story-flow__status-label {
   font-weight: 700;
   color: var(--text-primary);
+}
+
+.arcgis-assistant {
+  height: 100%;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto auto;
+  gap: 0.4rem;
+  padding: 0.35rem;
+}
+
+.arcgis-assistant__root {
+  height: 100%;
+  min-height: 0;
+  font-family: inherit;
+  --calcite-font-family: inherit;
+  --calcite-color-background: rgba(7, 22, 15, 0.9);
+  --calcite-color-foreground-1: rgba(10, 30, 20, 0.58);
+  --calcite-color-foreground-2: rgba(7, 22, 15, 0.9);
+  --calcite-color-foreground-3: rgba(7, 22, 15, 0.9);
+  --calcite-color-text-1: #eefdf3;
+  --calcite-color-text-2: #b6e8c8;
+  --calcite-color-text-3: #b6e8c8;
+  --calcite-color-border-1: rgba(74, 222, 128, 0.46);
+  --calcite-color-border-2: rgba(74, 222, 128, 0.46);
+  --calcite-color-border-3: rgba(74, 222, 128, 0.46);
+  --calcite-color-brand: #22c55e;
+  --calcite-color-brand-hover: #10b981;
+  --calcite-color-brand-press: #16a34a;
+  --calcite-color-focus: #10b981;
+}
+
+.arcgis-assistant__root.calcite-mode-light {
+  --calcite-color-background: rgba(245, 249, 255, 0.92);
+  --calcite-color-foreground-1: rgba(255, 255, 255, 0.82);
+  --calcite-color-foreground-2: rgba(245, 249, 255, 0.92);
+  --calcite-color-foreground-3: rgba(245, 249, 255, 0.92);
+  --calcite-color-text-1: #091018;
+  --calcite-color-text-2: #475569;
+  --calcite-color-text-3: #475569;
+  --calcite-color-border-1: rgba(74, 222, 128, 0.46);
+  --calcite-color-border-2: rgba(156, 163, 175, 0.8);
+  --calcite-color-border-3: rgba(156, 163, 175, 0.8);
+  --calcite-color-brand: #16a34a;
+  --calcite-color-brand-hover: #10b981;
+  --calcite-color-brand-press: #15803d;
+  --calcite-color-focus: #10b981;
+}
+
+.arcgis-assistant__chart-card {
+  display: grid;
+  gap: 0.5rem;
+  border: 1px solid color-mix(in oklab, var(--border-neon) 30%, var(--border-muted));
+  border-radius: 0.65rem;
+  padding: 0.6rem;
+  background: color-mix(in oklab, var(--surface-glass) 86%, rgba(8, 18, 36, 0.36));
+}
+
+.arcgis-assistant__chart-card-header {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.arcgis-assistant__chart-card-header strong {
+  font-size: 0.88rem;
+}
+
+.arcgis-assistant__chart-card-header span {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.arcgis-assistant__chart {
+  display: block;
+  width: 100%;
+  height: 260px;
+  min-height: 240px;
+}
+
+.arcgis-assistant__error,
+.arcgis-assistant__status {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.2;
+  padding: 0 0.2rem;
+}
+
+.arcgis-assistant__bridge-logs {
+  border-top: 1px solid
+    color-mix(in oklab, var(--border-neon) 28%, var(--border-muted));
+  padding: 0.4rem 0.25rem 0.2rem;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.arcgis-assistant__bridge-logs-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+}
+
+.arcgis-assistant__bridge-logs-header strong {
+  font-size: 0.75rem;
+  line-height: 1.1;
+  color: var(--text-muted);
+}
+
+.arcgis-assistant__bridge-copy {
+  font-size: 0.72rem;
+  padding: 0.28rem 0.46rem;
+}
+
+.arcgis-assistant__bridge-log-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 5.6rem;
+  overflow: auto;
+  display: grid;
+  gap: 0.12rem;
+}
+
+.arcgis-assistant__bridge-log-list li {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.68rem;
+  line-height: 1.22;
+  color: color-mix(in oklab, var(--text-primary) 80%, var(--text-muted));
+  white-space: pre-wrap;
+  word-break: break-word;
 }
