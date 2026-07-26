@@ -1,5 +1,6 @@
 import type FeatureLayer from "@arcgis/core/layers/FeatureLayer";
 import type MapView from "@arcgis/core/views/MapView";
+import { enrichTreeAttributesFromMap } from "./treeEnrichmentService";
 
 export type CreateTreeInput = {
   mapView: MapView;
@@ -14,6 +15,7 @@ export type CreatedTree = {
   latitude: number;
   longitude: number;
   isAlive: boolean;
+  canopyValue: string | number | null;
 };
 
 const TREE_LAYER_ID = "835d492568764e579de4ed33fd8c7549";
@@ -78,12 +80,40 @@ function buildTreeAttributes(
   return attributes;
 }
 
-function toCreatedTree(input: CreateTreeInput, id: string | number): CreatedTree {
+function resolveCanopyValue(attributes: Record<string, unknown>): string | number | null {
+  const directValue = attributes.Canopy;
+  if (typeof directValue === "string" || typeof directValue === "number") {
+    return directValue;
+  }
+
+  if (directValue === null) {
+    return null;
+  }
+
+  const canopyKey = Object.keys(attributes).find(
+    (key) => key.toLowerCase() === "canopy",
+  );
+  if (!canopyKey) {
+    return null;
+  }
+
+  const canopyValue = attributes[canopyKey];
+  return typeof canopyValue === "string" || typeof canopyValue === "number"
+    ? canopyValue
+    : null;
+}
+
+function toCreatedTree(
+  input: CreateTreeInput,
+  id: string | number,
+  attributes: Record<string, unknown>,
+): CreatedTree {
   return {
     id: String(id),
     latitude: input.latitude,
     longitude: input.longitude,
     isAlive: input.isAlive,
+    canopyValue: resolveCanopyValue(attributes),
   };
 }
 
@@ -100,13 +130,21 @@ export async function createTree(input: CreateTreeInput): Promise<CreatedTree> {
     import("@arcgis/core/geometry/Point"),
   ]);
 
+  const baseAttributes = buildTreeAttributes(input, featureLayer);
+  const enrichedAttributes = await enrichTreeAttributesFromMap(
+    input.mapView,
+    input.latitude,
+    input.longitude,
+    baseAttributes,
+  );
+
   const addFeatureGraphic = new GraphicClass({
     geometry: new PointClass({
       latitude: input.latitude,
       longitude: input.longitude,
       spatialReference: { wkid: 4326 },
     }),
-    attributes: buildTreeAttributes(input, featureLayer),
+    attributes: enrichedAttributes,
   });
 
   const editResult = await featureLayer.applyEdits({
@@ -133,5 +171,5 @@ export async function createTree(input: CreateTreeInput): Promise<CreatedTree> {
     throw new Error("Tree layer add result did not include an id.");
   }
 
-  return toCreatedTree(input, createdId);
+  return toCreatedTree(input, createdId, enrichedAttributes);
 }
