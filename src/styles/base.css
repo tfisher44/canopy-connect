@@ -7,6 +7,21 @@ body {
   color: var(--text-primary);
   background: var(--theme-bg);
   font-variant-ligatures: common-ligatures;
+  position: relative;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle at 15% 18%, var(--playful-dot-a) 0 0.3rem, transparent 0.32rem),
+    radial-gradient(circle at 86% 24%, var(--playful-dot-b) 0 0.26rem, transparent 0.3rem),
+    radial-gradient(circle at 70% 76%, var(--playful-dot-c) 0 0.24rem, transparent 0.28rem),
+    radial-gradient(circle at 28% 74%, var(--playful-dot-b) 0 0.22rem, transparent 0.27rem);
+  opacity: 0.8;
+  z-index: -1;
 }
 
 #root {

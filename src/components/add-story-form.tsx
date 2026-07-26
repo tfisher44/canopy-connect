@@ -41,7 +41,7 @@ export function AddStoryForm({ treeId, submitting, onSubmit }: AddStoryFormProps
       noValidate
     >
       <div className="tree-story-flow__location-chip">
-        <span className="muted">Linked tree</span>
+        <span className="muted">Linked tree GlobalID_2</span>
         <strong>{treeId}</strong>
       </div>
 

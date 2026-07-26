@@ -1,6 +1,6 @@
 @media (max-width: 900px) {
   :root {
-    --header-height: 7.25rem;
+    --header-height: 7.35rem;
   }
 
   .app-ribbon__inner {
@@ -15,8 +15,26 @@
     width: 100%;
   }
 
+  .app-ribbon__brand-lockup {
+    justify-content: center;
+  }
+
+  .app-ribbon__brand-lockup--with-logo {
+    align-items: center;
+  }
+
+  .app-ribbon__logo {
+    max-height: 4.4rem;
+    max-width: min(23rem, 82vw);
+  }
+
   .app-ribbon__subtitle {
     white-space: normal;
+    text-align: center;
+  }
+
+  .app-ribbon__subtitle--under-logo {
+    text-align: center;
   }
 
   .app-ribbon__meta {
@@ -25,5 +43,23 @@
     justify-content: space-between;
     justify-items: stretch;
     align-items: center;
+  }
+
+  .runtime-shell__mascot-image {
+    width: clamp(2.8rem, 8vw, 4.2rem);
+  }
+}
+
+@media (max-width: 560px) {
+  :root {
+    --header-height: 7.9rem;
+  }
+
+  .app-ribbon__logo {
+    max-height: 4rem;
+  }
+
+  .runtime-shell__mascot {
+    opacity: 0.26;
   }
 }

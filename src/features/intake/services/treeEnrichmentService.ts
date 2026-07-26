@@ -46,30 +46,22 @@ export const treeEnrichmentConfig: TreeEnrichmentConfig = {
     {
       layerId: "b925374111cc4809b0f4fc47d2c9a07e",
       enabled: true,
-      fieldMappings: [
-        { targetField: "Canopy" },
-      ],
+      fieldMappings: [{ targetField: "Canopy" }],
     },
     {
       layerId: "528164b1d64b44d997068efa34482cb9",
       enabled: true,
-      fieldMappings: [
-        { targetField: "FirePtntl" },
-      ],
+      fieldMappings: [{ targetField: "FirePtntl" }],
     },
     {
       layerId: "e7df45c175314a10acf351d61cec80ce",
       enabled: true,
-      fieldMappings: [
-        { targetField: "VulnChang" },
-      ],
+      fieldMappings: [{ targetField: "VulnChang" }],
     },
     {
       layerId: "ae7b7eff1dca4268ba567af17150f5e8",
       enabled: true,
-      fieldMappings: [
-        { targetField: "InsctDisease" },
-      ],
+      fieldMappings: [{ targetField: "InsctDisease" }],
     },
   ],
   strict: false,
@@ -95,7 +87,7 @@ function getLayerById(mapView: MapView, layerId: string): Layer {
   });
 
   if (!foundLayer) {
-    throw new Error(`Layer \"${normalizedLayerId}\" was not found in the map.`);
+    throw new Error(`Layer "${normalizedLayerId}" was not found in the map.`);
   }
 
   return foundLayer;
@@ -103,12 +95,14 @@ function getLayerById(mapView: MapView, layerId: string): Layer {
 
 function asFeatureLayer(layer: Layer, layerId: string): FeatureLayer {
   if (layer.type !== "feature") {
-    throw new Error(`Layer \"${layerId}\" is not a feature layer.`);
+    throw new Error(`Layer "${layerId}" is not a feature layer.`);
   }
   return layer as FeatureLayer;
 }
 
-function extractRasterAttributes(identifyResult: unknown): Record<string, unknown> {
+function extractRasterAttributes(
+  identifyResult: unknown,
+): Record<string, unknown> {
   if (!identifyResult || typeof identifyResult !== "object") {
     return {};
   }
@@ -117,7 +111,8 @@ function extractRasterAttributes(identifyResult: unknown): Record<string, unknow
 
   const rawResults = typedResult.results;
   if (Array.isArray(rawResults) && rawResults.length > 0) {
-    const firstResult = rawResults[0];
+    const typedRawResults = rawResults as unknown[];
+    const firstResult = typedRawResults[0];
     if (firstResult && typeof firstResult === "object") {
       const typedFirstResult = firstResult as Record<string, unknown>;
       const resultAttributes = typedFirstResult.attributes;
@@ -154,10 +149,20 @@ function normalizeMappedValueForTreeField(value: unknown): string | null {
   if (value === null || typeof value === "undefined") {
     return null;
   }
-  return String(value);
+  if (
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean" ||
+    typeof value === "bigint"
+  ) {
+    return String(value);
+  }
+  return null;
 }
 
-function getPrimaryRasterCellValueWithKey(sourceAttributes: Record<string, unknown>): {
+function getPrimaryRasterCellValueWithKey(
+  sourceAttributes: Record<string, unknown>,
+): {
   key: string | null;
   value: unknown;
 } {
@@ -190,21 +195,27 @@ async function queryPolygonRule(
   point: Point,
   rule: PolygonEnrichmentRule,
 ): Promise<Record<string, unknown>> {
-  const layer = asFeatureLayer(getLayerById(mapView, rule.layerId), rule.layerId);
+  const layer = asFeatureLayer(
+    getLayerById(mapView, rule.layerId),
+    rule.layerId,
+  );
   await layer.load();
 
   const queryCapabilities = layer.capabilities?.query as
-    | { supportsSpatialQuery?: boolean }
-    | undefined;
+    { supportsSpatialQuery?: boolean } | undefined;
   if (queryCapabilities?.supportsSpatialQuery === false) {
-    throw new Error(`Layer \"${rule.layerId}\" does not support spatial query.`);
+    throw new Error(
+      `Layer "${rule.layerId}" does not support spatial query.`,
+    );
   }
 
   const query = layer.createQuery();
   query.geometry = point;
   query.spatialRelationship = "intersects";
   query.returnGeometry = false;
-  query.outFields = [...new Set(rule.fieldMappings.map((mapping) => mapping.sourceField))];
+  query.outFields = [
+    ...new Set(rule.fieldMappings.map((mapping) => mapping.sourceField)),
+  ];
   query.num = 1;
   if (rule.where) {
     query.where = rule.where;
@@ -235,11 +246,14 @@ async function queryRasterRule(
   rule: RasterEnrichmentRule,
 ): Promise<Record<string, unknown>> {
   const layer = getLayerById(mapView, rule.layerId) as Layer & {
-    identify?: (geometry: Geometry, options?: Record<string, unknown>) => Promise<unknown>;
+    identify?: (
+      geometry: Geometry,
+      options?: Record<string, unknown>,
+    ) => Promise<unknown>;
   };
 
   if (typeof layer.identify !== "function") {
-    throw new Error(`Layer \"${rule.layerId}\" does not expose identify().`);
+    throw new Error(`Layer "${rule.layerId}" does not expose identify().`);
   }
 
   const identifyResult = await layer.identify(point, {

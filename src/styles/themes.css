@@ -1,16 +1,36 @@
 :root[data-mode="light"] .app-ribbon {
   background:
-    linear-gradient(160deg, rgba(252, 254, 255, 0.93), rgba(246, 250, 255, 0.93)) padding-box,
+    radial-gradient(
+      circle at 12% 50%,
+      color-mix(in oklab, var(--brand-core) 22%, transparent),
+      transparent 48%
+    ),
+    radial-gradient(
+      circle at 84% 14%,
+      color-mix(in oklab, var(--brand-spark-cyan) 18%, transparent),
+      transparent 42%
+    ),
+    radial-gradient(
+      circle at 36% 10%,
+      color-mix(in oklab, var(--brand-spark-pink) 14%, transparent),
+      transparent 25%
+    ),
+    radial-gradient(
+      circle at 68% 18%,
+      color-mix(in oklab, var(--brand-spark-gold) 14%, transparent),
+      transparent 22%
+    ),
+    linear-gradient(150deg, rgba(252, 255, 253, 0.95), rgba(245, 252, 249, 0.94)) padding-box,
     linear-gradient(
         110deg,
         color-mix(in oklab, var(--border-neon) 70%, #cbd5e1),
-        color-mix(in oklab, var(--border-neon-strong) 62%, #cbd5e1)
+        color-mix(in oklab, var(--border-neon-strong) 62%, #cbd5e1),
+        color-mix(in oklab, var(--brand-spark-gold) 55%, #cbd5e1)
       )
       border-box;
   box-shadow:
     0 0.3rem 0.8rem rgba(17, 24, 39, 0.1),
-    0 0 0.75rem color-mix(in oklab, var(--border-neon) 16%, transparent),
-    0 0 0.9rem color-mix(in oklab, var(--border-neon-strong) 14%, transparent);
+    0 0 0.5rem color-mix(in oklab, var(--border-neon) 11%, transparent);
 }
 
 :root[data-mode="light"] .runtime-shell__map-region {
@@ -18,12 +38,23 @@
     radial-gradient(circle at 20% 18%, var(--hero-overlay-a), transparent 45%),
     radial-gradient(circle at 82% 14%, var(--hero-overlay-b), transparent 44%),
     radial-gradient(circle at 52% 88%, var(--hero-overlay-c), transparent 42%),
-    linear-gradient(125deg, rgba(243, 248, 255, 0.96), rgba(233, 243, 255, 0.96)) padding-box,
-    linear-gradient(120deg, var(--border-neon), var(--border-neon-strong)) border-box;
+    radial-gradient(
+      circle at 74% 86%,
+      color-mix(in oklab, var(--brand-core) 13%, transparent),
+      transparent 40%
+    ),
+    radial-gradient(
+      circle at 22% 72%,
+      color-mix(in oklab, var(--brand-spark-pink) 8%, transparent),
+      transparent 33%
+    ),
+    linear-gradient(125deg, rgba(243, 248, 255, 0.96), rgba(233, 246, 240, 0.96)) padding-box,
+    linear-gradient(120deg, var(--border-neon), var(--border-neon-strong), var(--brand-spark-gold))
+      border-box;
   box-shadow:
     0 0.75rem 1.6rem rgba(15, 23, 42, 0.12),
-    0 0 0.75rem color-mix(in oklab, var(--border-neon) 18%, transparent),
-    0 0 0.9rem color-mix(in oklab, var(--border-neon-strong) 14%, transparent);
+    0 0 0.55rem color-mix(in oklab, var(--border-neon) 12%, transparent),
+    inset 0 0 1rem color-mix(in oklab, var(--brand-spark-gold) 7%, transparent);
 }
 
 :root[data-mode="light"] .button {

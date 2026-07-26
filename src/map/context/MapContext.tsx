@@ -68,6 +68,7 @@ type MapContextValue = MapRuntimeState & {
   setDraftTreeLocation: (location: { latitude: number; longitude: number } | null) => void;
   setNewTreePlacementMessage: (message: string | null) => void;
   addCreatedTree: (tree: CreatedTreeRecord) => void;
+  clearCreatedTrees: () => void;
   reset: () => void;
 };
 
@@ -87,6 +88,7 @@ type MapRuntimeAction =
     }
   | { type: "SET_NEW_TREE_PLACEMENT_MESSAGE"; payload: string | null }
   | { type: "ADD_CREATED_TREE"; payload: CreatedTreeRecord }
+  | { type: "CLEAR_CREATED_TREES" }
   | { type: "RESET" };
 
 const GEOCODER_URL = "https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer";
@@ -146,14 +148,16 @@ function mapRuntimeReducer(state: MapRuntimeState, action: MapRuntimeAction): Ma
     case "SET_TREE_SELECTION_ENABLED":
       if (
         state.treeSelectionEnabled === action.payload &&
-        (action.payload || (state.selectedTreeId === null && state.treeSelectionMessage === null))
+        state.treeSelectionMessage ===
+          (action.payload
+            ? "Click a story-eligible tree on the map to continue."
+            : null)
       ) {
         return state;
       }
       return {
         ...state,
         treeSelectionEnabled: action.payload,
-        selectedTreeId: action.payload ? state.selectedTreeId : null,
         treeSelectionMessage: action.payload
           ? "Click a story-eligible tree on the map to continue."
           : null,
@@ -222,6 +226,14 @@ function mapRuntimeReducer(state: MapRuntimeState, action: MapRuntimeAction): Ma
         createdTrees: nextTrees,
       };
     }
+    case "CLEAR_CREATED_TREES":
+      if (state.createdTrees.length === 0) {
+        return state;
+      }
+      return {
+        ...state,
+        createdTrees: [],
+      };
     case "RESET":
       return initialMapRuntimeState;
     default:
@@ -332,6 +344,9 @@ export function MapProvider({ children }: PropsWithChildren) {
       },
       addCreatedTree(tree) {
         dispatch({ type: "ADD_CREATED_TREE", payload: tree });
+      },
+      clearCreatedTrees() {
+        dispatch({ type: "CLEAR_CREATED_TREES" });
       },
       reset() {
         dispatch({ type: "RESET" });
