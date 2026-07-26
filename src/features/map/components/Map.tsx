@@ -111,7 +111,7 @@ const DRAFT_TREE_MARKER_ICON_URL =
 const DEFAULT_ZOOM_LEVEL = 5;
 const DEFAULT_CENTER = {
   latitude: 37.16611,
-  longitude: -119.44944,
+  longitude: -120.44944,
 };
 
 function isDraftTreeId(treeId: string): boolean {
