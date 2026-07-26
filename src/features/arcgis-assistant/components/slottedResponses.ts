@@ -220,6 +220,19 @@ function hasChartSignal(payload: SlottablePayload): boolean {
   );
 }
 
+function hasExplicitChartIntent(textContent: string): boolean {
+  const normalized = textContent.toLowerCase();
+  const hasChartNoun = /\b(chart|charts|insight|insights)\b/.test(normalized);
+  if (!hasChartNoun) {
+    return false;
+  }
+  return /\b(show|render|preview|visualize|surface|display)\b/.test(normalized);
+}
+
+function requestsAllCharts(textContent: string): boolean {
+  return /\b(all|every|each)\b/.test(textContent.toLowerCase());
+}
+
 export function describeSlottedResponsePayload(
   detail: AssistantSlottableRequestDetail,
 ): Record<string, unknown> {
@@ -330,6 +343,9 @@ export function inferChartResponsesFromText(
   if (textContent.length === 0) {
     return [];
   }
+  if (!hasExplicitChartIntent(textContent)) {
+    return [];
+  }
 
   const rankedMatches = rankChartMatches(textContent, chartCatalog);
   const seen = new Set<string>();
@@ -346,6 +362,8 @@ export function inferChartResponsesFromText(
       title: match.title,
     });
   }
-
+  if (!requestsAllCharts(textContent)) {
+    return inferred.slice(0, 1);
+  }
   return inferred;
 }
