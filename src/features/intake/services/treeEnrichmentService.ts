@@ -87,7 +87,7 @@ function getLayerById(mapView: MapView, layerId: string): Layer {
   });
 
   if (!foundLayer) {
-    throw new Error(`Layer \"${normalizedLayerId}\" was not found in the map.`);
+    throw new Error(`Layer "${normalizedLayerId}" was not found in the map.`);
   }
 
   return foundLayer;
@@ -95,7 +95,7 @@ function getLayerById(mapView: MapView, layerId: string): Layer {
 
 function asFeatureLayer(layer: Layer, layerId: string): FeatureLayer {
   if (layer.type !== "feature") {
-    throw new Error(`Layer \"${layerId}\" is not a feature layer.`);
+    throw new Error(`Layer "${layerId}" is not a feature layer.`);
   }
   return layer as FeatureLayer;
 }
@@ -111,7 +111,8 @@ function extractRasterAttributes(
 
   const rawResults = typedResult.results;
   if (Array.isArray(rawResults) && rawResults.length > 0) {
-    const firstResult = rawResults[0];
+    const typedRawResults = rawResults as unknown[];
+    const firstResult = typedRawResults[0];
     if (firstResult && typeof firstResult === "object") {
       const typedFirstResult = firstResult as Record<string, unknown>;
       const resultAttributes = typedFirstResult.attributes;
@@ -148,7 +149,15 @@ function normalizeMappedValueForTreeField(value: unknown): string | null {
   if (value === null || typeof value === "undefined") {
     return null;
   }
-  return String(value);
+  if (
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean" ||
+    typeof value === "bigint"
+  ) {
+    return String(value);
+  }
+  return null;
 }
 
 function getPrimaryRasterCellValueWithKey(
@@ -196,7 +205,7 @@ async function queryPolygonRule(
     { supportsSpatialQuery?: boolean } | undefined;
   if (queryCapabilities?.supportsSpatialQuery === false) {
     throw new Error(
-      `Layer \"${rule.layerId}\" does not support spatial query.`,
+      `Layer "${rule.layerId}" does not support spatial query.`,
     );
   }
 
@@ -244,7 +253,7 @@ async function queryRasterRule(
   };
 
   if (typeof layer.identify !== "function") {
-    throw new Error(`Layer \"${rule.layerId}\" does not expose identify().`);
+    throw new Error(`Layer "${rule.layerId}" does not expose identify().`);
   }
 
   const identifyResult = await layer.identify(point, {
