@@ -1,4 +1,5 @@
 import type { FeatureLayerChartDetail } from "../services/chartCatalog";
+import { rankChartMatches } from "../services/chartMatching";
 
 type UXSuggestion = {
   type?: string;
@@ -176,9 +177,11 @@ function getSuggestionType(payload: SlottablePayload): string {
 }
 
 function getTextParts(payload: SlottablePayload): string[] {
-  const directParts = Array.isArray(payload.parts) ? payload.parts : [];
+  const directParts: unknown[] = Array.isArray(payload.parts) ? payload.parts : [];
   const dataPartsRecord = asRecord(payload.data);
-  const nestedParts = Array.isArray(dataPartsRecord?.parts) ? dataPartsRecord.parts : [];
+  const nestedParts: unknown[] = Array.isArray(dataPartsRecord?.parts)
+    ? dataPartsRecord.parts
+    : [];
   const allParts = [...directParts, ...nestedParts];
   const texts: string[] = [];
 
@@ -328,28 +331,19 @@ export function inferChartResponsesFromText(
     return [];
   }
 
-  const matches = chartCatalog.filter(
-    (layer) =>
-      typeof layer.layerItemId === "string" &&
-      layer.layerItemId.length > 0 &&
-      Array.isArray(layer.chartIndexes) &&
-      layer.chartIndexes.length > 0 &&
-      textContent.includes(layer.layerTitle.toLowerCase()),
-  );
-
+  const rankedMatches = rankChartMatches(textContent, chartCatalog);
   const seen = new Set<string>();
   const inferred: SlottedChartResponse[] = [];
-  for (const layer of matches) {
-    if (!layer.layerItemId || seen.has(layer.layerItemId)) {
+  for (const match of rankedMatches) {
+    if (!match.layer.layerItemId || seen.has(match.layer.layerItemId)) {
       continue;
     }
-    seen.add(layer.layerItemId);
-    const chartIndex = layer.chartIndexes[0] ?? 0;
+    seen.add(match.layer.layerItemId);
     inferred.push({
       slotName: detail.slotName,
-      layerItemId: layer.layerItemId,
-      chartIndex,
-      title: `${layer.layerTitle} · chart ${chartIndex + 1}`,
+      layerItemId: match.layer.layerItemId,
+      chartIndex: match.chartIndex,
+      title: match.title,
     });
   }
 

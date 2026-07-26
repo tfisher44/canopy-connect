@@ -2,9 +2,19 @@ import { FunctionAgent } from "@arcgis/ai-components/agent-utils/FunctionAgent.j
 import { WorkflowAgent } from "@arcgis/ai-components/agent-utils/WorkflowAgent.js";
 import { SequentialWorkflow } from "@arcgis/ai-components/agent-utils/workflows/SequentialWorkflow.js";
 import { sendUXSuggestion } from "@arcgis/ai-components/agent-utils/index.js";
-import type { AgentRegistration } from "@arcgis/ai-components/utils/index.js";
+import {
+  invokeStructuredPrompt,
+  sendTraceMessage,
+  type AgentRegistration,
+  type ChatHistory,
+} from "@arcgis/ai-components/utils/index.js";
 import z from "zod";
 import type { FeatureLayerChartDetail } from "../services/chartCatalog";
+import {
+  getAllRenderableCharts,
+  rankChartMatches,
+  selectBestChartMatch,
+} from "../services/chartMatching";
 
 type ChartAgentContext = {
   chartCatalog: FeatureLayerChartDetail[];
@@ -32,143 +42,160 @@ const selectChartOutputSchema = z.object({
   selectedChart: selectedChartSchema.nullable(),
 });
 
-const CHART_RENDER_AGENT_DESCRIPTION = String.raw`- **Feature layer chart renderer** — Use this agent when the user asks to render, show, preview, chart, visualize, or surface configured insights/charts for feature layers in the current web map.
+const llmChartSelectionSchema = z.object({
+  selectedCandidateIndex: z.number().int().nonnegative().nullable(),
+  confidence: z.enum(["high", "medium", "low"]),
+  rationale: z.string().min(1),
+});
 
-The agent inspects available feature-layer chart metadata and selects the best matching configured chart from the user prompt. It then emits a structured UI suggestion that renders an ArcGIS chart.
+const CHART_RENDER_AGENT_DESCRIPTION = String.raw`- **Feature layer chart renderer** — Prefer this agent whenever the user asks to show, render, preview, chart, visualize, or surface existing configured insights/charts from the current web map.
+
+Always use this agent for prompts in these patterns when they refer to existing map insights:
+- "show XX insights"
+- "show XX charts"
+- "show charts for XX"
+- "render the XX chart"
+- "visualize XX insights"
+
+Match requests against the current map's configured chart metadata, including:
+- layer titles
+- chart titles
+- chart descriptions/subtitles
 
 Examples:
 - "Show me the chart for the trees layer."
 - "Render chart 2 for the species layer."
-- "Can you visualize a configured map chart?"
+- "Show bike route insights."
+- "Show truck route charts."
 - "Show all configured insights."
-- "Show all configured feature-layer charts in this webmap."
 
-Do not route to generic data exploration for these chart/insight prompts; use this chart renderer agent to produce slotted chart UI suggestions.`;
-
-function tokenize(input: string): Set<string> {
-  return new Set(
-    input
-      .toLowerCase()
-      .replace(/[^a-z0-9\s]/g, " ")
-      .split(/\s+/)
-      .map((token) => token.trim())
-      .filter((token) => token.length > 0),
-  );
-}
-
-function parseRequestedChartIndex(userRequest: string): number | null {
-  const byOrdinal = /chart\s+#?\s*(\d+)/i.exec(userRequest);
-  if (!byOrdinal) {
-    return null;
-  }
-  const parsed = Number(byOrdinal[1]);
-  if (!Number.isFinite(parsed) || parsed < 1) {
-    return null;
-  }
-  return Math.floor(parsed) - 1;
-}
-
-function scoreLayerMatch(
-  userRequest: string,
-  userTokens: Set<string>,
-  layer: FeatureLayerChartDetail,
-): number {
-  let score = 0;
-  const lowered = userRequest.toLowerCase();
-  const title = layer.layerTitle.toLowerCase();
-
-  if (lowered.includes(title)) {
-    score += 12;
-  }
-
-  const titleTokens = tokenize(layer.layerTitle);
-  for (const token of titleTokens) {
-    if (userTokens.has(token)) {
-      score += 2;
-    }
-  }
-
-  if (layer.layerId && lowered.includes(layer.layerId.toLowerCase())) {
-    score += 8;
-  }
-
-  if (layer.layerItemId && lowered.includes(layer.layerItemId.toLowerCase())) {
-    score += 10;
-  }
-
-  return score;
-}
-
-function selectBestChart(
-  userRequest: string,
-  chartCatalog: FeatureLayerChartDetail[],
-): SelectedChart | null {
-  const layersWithRenderableCharts = chartCatalog.filter(
-    (layer) =>
-      typeof layer.layerItemId === "string" &&
-      layer.layerItemId.length > 0 &&
-      Array.isArray(layer.chartIndexes) &&
-      layer.chartIndexes.length > 0,
-  );
-
-  if (layersWithRenderableCharts.length === 0) {
-    return null;
-  }
-
-  const userTokens = tokenize(userRequest);
-  const requestedChartIndex = parseRequestedChartIndex(userRequest);
-
-  const ranked = [...layersWithRenderableCharts].sort((left, right) => {
-    const leftScore = scoreLayerMatch(userRequest, userTokens, left);
-    const rightScore = scoreLayerMatch(userRequest, userTokens, right);
-    if (leftScore !== rightScore) {
-      return rightScore - leftScore;
-    }
-    return left.layerTitle.localeCompare(right.layerTitle);
-  });
-
-  const best = ranked[0];
-  if (!best.layerItemId) {
-    return null;
-  }
-
-  const fallbackChartIndex = best.chartIndexes[0] ?? 0;
-  const resolvedChartIndex =
-    requestedChartIndex !== null && best.chartIndexes.includes(requestedChartIndex)
-      ? requestedChartIndex
-      : fallbackChartIndex;
-
-  return {
-    layerItemId: best.layerItemId,
-    layerId: best.layerId,
-    chartIndex: resolvedChartIndex,
-    title: `${best.layerTitle} · chart ${resolvedChartIndex + 1}`,
-  };
-}
+Only let broader ad hoc exploratory analysis go to data exploration when the request is not asking for an existing configured chart/insight.`;
 
 function shouldRenderAllCharts(userRequest: string): boolean {
   const normalized = userRequest.toLowerCase();
   return /\ball\b|\bevery\b|\beach\b/.test(normalized);
 }
 
-function getAllRenderableCharts(
+type LlmChartCandidate = {
+  candidateIndex: number;
+  layerItemId: string;
+  layerId: string | null;
+  layerTitle: string;
+  chartIndex: number;
+  chartNumber: number;
+  chartTitle: string | null;
+  chartDescription: string | null;
+  displayTitle: string;
+};
+
+function buildLlmChartCandidates(
+  userRequest: string,
   chartCatalog: FeatureLayerChartDetail[],
-): SelectedChart[] {
-  const charts: SelectedChart[] = [];
-  for (const layer of chartCatalog) {
-    if (!layer.layerItemId || layer.chartIndexes.length === 0) {
-      continue;
-    }
-    for (const chartIndex of layer.chartIndexes) {
-      charts.push({
-        layerItemId: layer.layerItemId,
-        layerId: layer.layerId,
-        chartIndex,
-        title: `${layer.layerTitle} · chart ${chartIndex + 1}`,
-      });
-    }
+): LlmChartCandidate[] {
+  const rankedMatches = rankChartMatches(userRequest, chartCatalog);
+  const sourceMatches = rankedMatches.length > 0
+    ? rankedMatches
+    : chartCatalog.flatMap((layer) =>
+        layer.chartIndexes.map((chartIndex) => ({
+          layer,
+          chartIndex,
+          chartMetadata: layer.chartMetadata.find(
+            (metadata) => metadata.chartIndex === chartIndex,
+          ),
+          title:
+            layer.chartMetadata.find(
+              (metadata) => metadata.chartIndex === chartIndex,
+            )?.title
+              ? `${layer.layerTitle} · ${layer.chartMetadata.find(
+                  (metadata) => metadata.chartIndex === chartIndex,
+                )?.title}`
+              : `${layer.layerTitle} · chart ${chartIndex + 1}`,
+          score: 0,
+          exactPhraseMatches: 0,
+          sharedTokenCount: 0,
+          sharedPhraseCount: 0,
+        })),
+      );
+
+  return sourceMatches
+    .filter((candidate) => candidate.layer.layerItemId)
+    .slice(0, 12)
+    .map((candidate, index) => ({
+      candidateIndex: index,
+      layerItemId: candidate.layer.layerItemId as string,
+      layerId: candidate.layer.layerId,
+      layerTitle: candidate.layer.layerTitle,
+      chartIndex: candidate.chartIndex,
+      chartNumber: candidate.chartIndex + 1,
+      chartTitle: candidate.chartMetadata?.title ?? null,
+      chartDescription: candidate.chartMetadata?.description ?? null,
+      displayTitle: candidate.title,
+    }));
+}
+
+async function selectChartWithArcgisModel(
+  userRequest: string,
+  chartCatalog: FeatureLayerChartDetail[],
+  messages: ChatHistory | undefined,
+  config: unknown,
+): Promise<SelectedChart | null> {
+  const candidates = buildLlmChartCandidates(userRequest, chartCatalog);
+  if (candidates.length === 0) {
+    return null;
   }
-  return charts;
+
+  const llmSelection = await invokeStructuredPrompt({
+    promptText: `You select the best matching configured ArcGIS chart from the current web map.
+
+User request:
+${userRequest}
+
+Candidate charts:
+${JSON.stringify(candidates, null, 2)}
+
+Rules:
+- Choose exactly one candidate only if the request is clearly asking for an existing configured chart or insight from this list.
+- Match using layer title, chart title, chart description, and chart number.
+- If the request is ambiguous between multiple candidates, broader exploratory analysis, or not a clear configured-chart request, return null.
+- If the user mentions a specific chart number, respect it only when it matches a listed candidate.
+- Prefer exact semantic matches for phrases like "show bike route insights" or "show truck route charts".
+
+Return the selected candidate index or null, plus confidence and rationale.`,
+    schema: llmChartSelectionSchema,
+    modelTier: "default",
+    temperature: 0,
+    messages,
+    config: config as Parameters<typeof invokeStructuredPrompt>[0]["config"],
+  });
+
+  await sendTraceMessage(
+    {
+      text: `Chart selector confidence=${llmSelection.confidence}; rationale=${llmSelection.rationale}`,
+      agentName: "Feature Layer Chart Agent",
+    },
+    config as Parameters<typeof sendTraceMessage>[1],
+  );
+
+  if (
+    llmSelection.selectedCandidateIndex === null ||
+    llmSelection.confidence === "low"
+  ) {
+    return null;
+  }
+
+  const selectedCandidate = candidates.find(
+    (candidate) => candidate.candidateIndex === llmSelection.selectedCandidateIndex,
+  );
+  if (!selectedCandidate) {
+    return null;
+  }
+
+  return {
+    layerItemId: selectedCandidate.layerItemId,
+    layerId: selectedCandidate.layerId,
+    chartIndex: selectedCandidate.chartIndex,
+    title: selectedCandidate.displayTitle,
+  };
 }
 
 const selectFeatureLayerChartAgent = new FunctionAgent<
@@ -179,12 +206,48 @@ const selectFeatureLayerChartAgent = new FunctionAgent<
   description:
     "Selects the most relevant configured feature-layer chart based on the user request.",
   outputSchema: selectChartOutputSchema,
-  execute: (state, config) => {
+  execute: async (state, config) => {
     const context = config?.configurable?.context as ChartAgentContext | undefined;
     const chartCatalog = context?.chartCatalog ?? [];
     const userRequest = state.agentExecutionContext?.userRequest ?? "";
-    const selectedChart = selectBestChart(userRequest, chartCatalog);
-    return { selectedChart };
+    const messages = state.agentExecutionContext?.messages;
+
+    try {
+      const llmSelectedChart = await selectChartWithArcgisModel(
+        userRequest,
+        chartCatalog,
+        messages,
+        config,
+      );
+      if (llmSelectedChart) {
+        return { selectedChart: llmSelectedChart };
+      }
+    } catch (cause: unknown) {
+      await sendTraceMessage(
+        {
+          text:
+            cause instanceof Error
+              ? `Chart selector model fallback triggered: ${cause.message}`
+              : "Chart selector model fallback triggered.",
+          agentName: "Feature Layer Chart Agent",
+        },
+        config,
+      );
+    }
+
+    const selectedMatch = selectBestChartMatch(userRequest, chartCatalog);
+    if (!selectedMatch) {
+      return { selectedChart: null };
+    }
+
+    return {
+      selectedChart: {
+        layerItemId: selectedMatch.layer.layerItemId as string,
+        layerId: selectedMatch.layer.layerId,
+        chartIndex: selectedMatch.chartIndex,
+        title: selectedMatch.title,
+      },
+    };
   },
 });
 
@@ -227,7 +290,7 @@ const emitFeatureLayerChartSuggestionAgent = new FunctionAgent<
 
     const selectedChart = state.selectedChart ?? null;
     if (!selectedChart) {
-      return "I couldn't find any configured feature-layer charts to render right now.";
+      return "I couldn't find a confident configured chart match for that request.";
     }
 
     await sendUXSuggestion(

@@ -12,6 +12,12 @@ type FeatureLayerWithCharts = {
   load?: () => Promise<unknown>;
 };
 
+export type FeatureLayerChartMetadata = {
+  chartIndex: number;
+  title: string | null;
+  description: string | null;
+};
+
 export type FeatureLayerChartDetail = {
   layerId: string | null;
   layerTitle: string;
@@ -20,6 +26,7 @@ export type FeatureLayerChartDetail = {
   chartIndexes: number[];
   layerRef: unknown;
   chartModels: unknown[];
+  chartMetadata: FeatureLayerChartMetadata[];
 };
 
 function isFeatureLayerWithCharts(layer: unknown): layer is FeatureLayerWithCharts {
@@ -39,6 +46,69 @@ function getLayerTitle(layer: FeatureLayerWithCharts): string {
     }
   }
   return "Untitled feature layer";
+}
+
+function toTrimmedString(value: unknown): string | null {
+  if (typeof value !== "string") {
+    return null;
+  }
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" ? (value as Record<string, unknown>) : null;
+}
+
+function extractTextValue(value: unknown, depth = 0): string | null {
+  if (depth > 2) {
+    return null;
+  }
+
+  const direct = toTrimmedString(value);
+  if (direct) {
+    return direct;
+  }
+
+  const record = asRecord(value);
+  if (!record) {
+    return null;
+  }
+
+  const directText =
+    toTrimmedString(record.text) ??
+    toTrimmedString(record.label) ??
+    toTrimmedString(record.value) ??
+    toTrimmedString(record.name);
+  if (directText) {
+    return directText;
+  }
+
+  return (
+    extractTextValue(record.content, depth + 1) ??
+    extractTextValue(record.textInfo, depth + 1) ??
+    extractTextValue(record.symbol, depth + 1)
+  );
+}
+
+function buildChartMetadata(
+  chart: unknown,
+  chartIndex: number,
+): FeatureLayerChartMetadata {
+  const chartRecord = asRecord(chart);
+  const title =
+    extractTextValue(chartRecord?.title) ??
+    extractTextValue(chartRecord?.name);
+  const subtitle = extractTextValue(chartRecord?.subtitle);
+  const description =
+    extractTextValue(chartRecord?.description) ??
+    subtitle;
+
+  return {
+    chartIndex,
+    title,
+    description,
+  };
 }
 
 export async function getFeatureLayerChartDetails(
@@ -92,6 +162,7 @@ export async function getFeatureLayerChartDetails(
       chartIndexes: charts.map((_, index) => index),
       layerRef: layer,
       chartModels: charts,
+      chartMetadata: charts.map((chart, index) => buildChartMetadata(chart, index)),
     });
   }
 

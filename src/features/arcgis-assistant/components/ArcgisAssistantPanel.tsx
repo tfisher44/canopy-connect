@@ -18,6 +18,10 @@ import {
   getFeatureLayerChartDetails,
   type FeatureLayerChartDetail,
 } from "../services/chartCatalog";
+import {
+  getAllRenderableCharts,
+  selectBestChartMatch,
+} from "../services/chartMatching";
 
 type AssistantChartElement = HTMLElement & {
   chartIndex?: number;
@@ -29,6 +33,92 @@ type AssistantChartElement = HTMLElement & {
   loadModel?: () => Promise<void>;
   refresh?: (props?: { updateData?: boolean; resetAxesBounds?: boolean }) => Promise<void>;
 };
+
+type AssistantChartSuggestion = {
+  layerItemId: string;
+  chartIndex: number;
+  title: string;
+};
+
+type AssistantResponseMessage = {
+  id: string;
+  role: "assistant" | "user";
+  content?: string;
+  blocks?: Array<{
+    type?: string;
+    data?: Record<string, unknown>;
+    isPending?: boolean;
+  }>;
+};
+
+type AssistantMessagesCollection = {
+  toArray?: () => unknown[];
+  splice: (start: number, deleteCount: number, ...items: unknown[]) => unknown;
+};
+
+type AssistantElementBridge = {
+  messages?: AssistantMessagesCollection;
+};
+
+const CHART_NO_MATCH_RESPONSE =
+  "I couldn't find a confident configured chart match for that request.";
+
+function hasExistingChartBlock(
+  blocks: AssistantResponseMessage["blocks"] | undefined,
+): boolean {
+  if (!blocks) {
+    return false;
+  }
+
+  return blocks.some((block) => {
+    const blockType = typeof block.type === "string" ? block.type.toLowerCase() : "";
+    if (blockType === "arcgis-chart" || blockType === "chart") {
+      return true;
+    }
+    const blockData = block.data;
+    return (
+      blockData?.layerItemId !== undefined ||
+      blockData?.["layer-item-id"] !== undefined ||
+      blockData?.chartIndex !== undefined ||
+      blockData?.["chart-index"] !== undefined
+    );
+  });
+}
+
+function suppressChartNoMatchResponse(content: string | undefined): string | undefined {
+  if (!content) {
+    return content;
+  }
+
+  const normalized = content.trim();
+  if (normalized === CHART_NO_MATCH_RESPONSE) {
+    return undefined;
+  }
+
+  if (!normalized.includes(CHART_NO_MATCH_RESPONSE)) {
+    return content;
+  }
+
+  const sanitized = normalized
+    .replace(CHART_NO_MATCH_RESPONSE, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+
+  return sanitized.length > 0 ? sanitized : undefined;
+}
+
+function shouldHandleDirectChartPrompt(userRequest: string): boolean {
+  const normalized = userRequest.toLowerCase();
+  return (
+    /\b(show|render|preview|visualize|surface)\b/.test(normalized) &&
+    /\b(chart|charts|insight|insights)\b/.test(normalized)
+  );
+}
+
+function shouldRenderAllCharts(userRequest: string): boolean {
+  const normalized = userRequest.toLowerCase();
+  return /\ball\b|\bevery\b|\beach\b/.test(normalized);
+}
 
 function ArcgisChartRenderer({
   slotName,
@@ -94,12 +184,24 @@ function ArcgisChartRenderer({
       return;
     }
     const timer = window.setTimeout(() => {
-      fallbackToLayer("no-lifecycle-events-timeout");
-    }, 4500);
+      onBridgeLog("chart:lifecycle-slow", {
+        slotName,
+        layerItemId,
+        chartIndex,
+        renderMode,
+      });
+    }, 8000);
     return () => {
       window.clearTimeout(timer);
     };
-  }, [didRenderComplete, fallbackToLayer, renderMode]);
+  }, [
+    chartIndex,
+    didRenderComplete,
+    layerItemId,
+    onBridgeLog,
+    renderMode,
+    slotName,
+  ]);
 
   useEffect(() => {
     const chartNode = chartElementRef.current;
@@ -293,6 +395,8 @@ function ArcgisChartRenderer({
 export function ArcgisAssistantPanel() {
   const { mapView, status } = useMapRuntime();
   const { colorMode } = useTheme();
+  const assistantElementRef = useRef<HTMLElement | null>(null);
+  const pendingDirectChartsRef = useRef<AssistantChartSuggestion[] | null>(null);
   const [chartDetails, setChartDetails] = useState<FeatureLayerChartDetail[]>(
     [],
   );
@@ -399,9 +503,42 @@ export function ArcgisAssistantPanel() {
     }
   }, [appendBridgeLog, bridgeLogs]);
 
+  const getDirectChartSuggestions = useCallback(
+    (userRequest: string): AssistantChartSuggestion[] => {
+      if (!shouldHandleDirectChartPrompt(userRequest)) {
+        return [];
+      }
+
+      if (shouldRenderAllCharts(userRequest)) {
+        return getAllRenderableCharts(chartDetails).map((chart) => ({
+          layerItemId: chart.layerItemId,
+          chartIndex: chart.chartIndex,
+          title: chart.title,
+        }));
+      }
+
+      const selectedMatch = selectBestChartMatch(userRequest, chartDetails);
+      if (!selectedMatch?.layer.layerItemId) {
+        return [];
+      }
+
+      return [
+        {
+          layerItemId: selectedMatch.layer.layerItemId,
+          chartIndex: selectedMatch.chartIndex,
+          title: selectedMatch.title,
+        },
+      ];
+    },
+    [chartDetails],
+  );
+
   return (
     <section className="arcgis-assistant" aria-label="ArcGIS assistant panel">
       <arcgis-assistant
+        ref={(node) => {
+          assistantElementRef.current = node;
+        }}
         className={`arcgis-assistant__root calcite-mode-${colorMode}`}
         referenceElement="main-map"
         heading="Assistant"
@@ -416,6 +553,77 @@ export function ArcgisAssistantPanel() {
         keepSuggestedPrompts={true}
         copyEnabled={true}
         logEnabled={import.meta.env.DEV}
+        onarcgisSubmit={(event: { detail: string }) => {
+          const suggestions = getDirectChartSuggestions(event.detail);
+          pendingDirectChartsRef.current =
+            suggestions.length > 0 ? suggestions : null;
+          appendBridgeLog("submit", {
+            prompt: event.detail,
+            directChartCount: suggestions.length,
+          });
+        }}
+        onarcgisResponse={(event: { detail: AssistantResponseMessage }) => {
+          const pendingSuggestions = pendingDirectChartsRef.current;
+          if (!pendingSuggestions || pendingSuggestions.length === 0) {
+            return;
+          }
+
+          const assistantNode = assistantElementRef.current;
+          const messages = (assistantNode as AssistantElementBridge | null)?.messages;
+          if (!messages) {
+            return;
+          }
+          const messageList =
+            typeof messages.toArray === "function"
+              ? (messages.toArray() as AssistantResponseMessage[])
+              : [];
+          const messageIndex = messageList.findIndex(
+            (message) =>
+              message.id === event.detail.id && message.role === "assistant",
+          );
+          if (messageIndex < 0) {
+            return;
+          }
+
+          const currentMessage = messageList[messageIndex];
+          const existingBlocks = currentMessage.blocks ?? [];
+          const existingChartBlock = hasExistingChartBlock(existingBlocks);
+          const nextContent = suppressChartNoMatchResponse(currentMessage.content);
+          const nextBlocks = existingChartBlock
+            ? existingBlocks
+            : [
+                ...existingBlocks,
+                ...pendingSuggestions.map((suggestion) => ({
+                  type: "arcgis-chart",
+                  data: {
+                    title: suggestion.title,
+                    chartIndex: suggestion.chartIndex,
+                    "chart-index": suggestion.chartIndex,
+                    layerItemId: suggestion.layerItemId,
+                    "layer-item-id": suggestion.layerItemId,
+                  },
+                })),
+              ];
+
+          if (nextContent === currentMessage.content && nextBlocks === existingBlocks) {
+            pendingDirectChartsRef.current = null;
+            return;
+          }
+
+          messages.splice(messageIndex, 1, {
+            ...currentMessage,
+            content: nextContent,
+            blocks: nextBlocks,
+          });
+          pendingDirectChartsRef.current = null;
+          appendBridgeLog(
+            existingChartBlock ? "direct-chart:response-suppressed" : "direct-chart:injected",
+            {
+              messageId: event.detail.id,
+              count: pendingSuggestions.length,
+            },
+          );
+        }}
         onarcgisSlottableRequest={(event: {
           detail: AssistantSlottableRequestDetail;
         }) => {
@@ -516,11 +724,11 @@ export function ArcgisAssistantPanel() {
         }}
       >
         <arcgis-assistant-navigation-agent />
-        <arcgis-assistant-data-exploration-agent />
         <arcgis-assistant-agent
           agent={FeatureLayerChartAgent}
           context={chartCatalogContext}
         />
+        <arcgis-assistant-data-exploration-agent />
         <div className="arcgis-assistant__bridge-logs" slot="footer-content">
           <div className="arcgis-assistant__bridge-logs-header">
             <strong>Bridge logs</strong>

@@ -1151,11 +1151,6 @@ export function MapPlaceholder() {
           item-id="170c461c2973474e80d13c1294cc6669"
           autoDestroyDisabled={true}
         >
-          <arcgis-chart
-            layer-item-id="5a202a97c70242f69242d5f0745006d1"
-            slot="bottom-left"
-            chart-index="1"
-          ></arcgis-chart>
           <arcgis-search
             ref={searchElementRef}
             slot="top-left"
