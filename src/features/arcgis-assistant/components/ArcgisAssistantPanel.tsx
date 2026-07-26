@@ -112,21 +112,17 @@ function suppressChartNoMatchResponse(
     return content;
   }
 
-  const normalized = content.trim();
-  if (normalized === CHART_NO_MATCH_RESPONSE) {
+  if (content.trim() === CHART_NO_MATCH_RESPONSE) {
     return undefined;
   }
 
-  if (!normalized.includes(CHART_NO_MATCH_RESPONSE)) {
-    return content;
-  }
+  return content;
+}
 
-  const sanitized = normalized
-    .replace(CHART_NO_MATCH_RESPONSE, "")
-    .replace(/\s{2,}/g, " ")
-    .trim();
-
-  return sanitized.length > 0 ? sanitized : undefined;
+function isPendingAssistantMessage(
+  message: AssistantResponseMessage,
+): boolean {
+  return (message.blocks ?? []).some((block) => block.isPending === true);
 }
 
 function shouldHandleDirectChartPrompt(userRequest: string): boolean {
@@ -737,11 +733,9 @@ export function ArcgisAssistantPanel() {
           });
         }}
         onarcgisResponse={(event: { detail: AssistantResponseMessage }) => {
-          const pendingSuggestions = pendingDirectChartsRef.current;
-          if (!pendingSuggestions || pendingSuggestions.length === 0) {
+          if (isPendingAssistantMessage(event.detail)) {
             return;
           }
-
           const assistantNode = assistantElementRef.current;
           const messages = (assistantNode as AssistantElementBridge | null)
             ?.messages;
@@ -761,11 +755,26 @@ export function ArcgisAssistantPanel() {
           }
 
           const currentMessage = messageList[messageIndex];
-          const existingBlocks = currentMessage.blocks ?? [];
-          const existingChartBlock = hasExistingChartBlock(existingBlocks);
           const nextContent = suppressChartNoMatchResponse(
             currentMessage.content,
           );
+          const pendingSuggestions = pendingDirectChartsRef.current;
+          if (!pendingSuggestions || pendingSuggestions.length === 0) {
+            if (nextContent === currentMessage.content) {
+              return;
+            }
+            messages.splice(messageIndex, 1, {
+              ...currentMessage,
+              content: nextContent,
+            });
+            appendBridgeLog("direct-chart:no-match-suppressed", {
+              messageId: event.detail.id,
+            });
+            return;
+          }
+
+          const existingBlocks = currentMessage.blocks ?? [];
+          const existingChartBlock = hasExistingChartBlock(existingBlocks);
           const nextBlocks = existingChartBlock
             ? existingBlocks
             : [
