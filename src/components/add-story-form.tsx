@@ -5,13 +5,12 @@ import { Controller, useForm } from "react-hook-form";
 import { addStorySchema, type AddStoryFormValues } from "../features/intake/schema";
 
 type AddStoryFormProps = {
-  treeId: string;
   submitting: boolean;
   submitError?: string | null;
   onSubmit: (values: AddStoryFormValues) => Promise<void>;
 };
 
-export function AddStoryForm({ treeId, submitting, submitError, onSubmit }: AddStoryFormProps) {
+export function AddStoryForm({ submitting, submitError, onSubmit }: AddStoryFormProps) {
   const {
     register,
     control,
@@ -41,11 +40,6 @@ export function AddStoryForm({ treeId, submitting, submitError, onSubmit }: AddS
       }}
       noValidate
     >
-      <div className="tree-story-flow__location-chip">
-        <span className="muted">Linked tree GlobalID_2</span>
-        <strong>{treeId}</strong>
-      </div>
-
       <div className="field">
         <Label.Root htmlFor="story-title">Story title</Label.Root>
         <input

@@ -36,7 +36,6 @@ function getHeading(step: TreeStoryFlowStep): string {
 
 async function showTreeAddedSuccessPopup(
   mapView: NonNullable<ReturnType<typeof useMapRuntime>["mapView"]>,
-  treeId: string,
   latitude: number,
   longitude: number,
 ): Promise<void> {
@@ -48,7 +47,7 @@ async function showTreeAddedSuccessPopup(
 
   mapView.popup.open({
     title: "Tree added",
-    content: `Tree ${treeId} was added successfully.`,
+    content: "Your tree was added successfully.",
     location: new PointClass({
       latitude,
       longitude,
@@ -86,7 +85,6 @@ export function TreeStoryFlowPanel() {
   const [treeSubmitting, setTreeSubmitting] = useState(false);
   const [storySubmitError, setStorySubmitError] = useState<string | null>(null);
   const [storySubmitting, setStorySubmitting] = useState(false);
-  const [submittedStoryId, setSubmittedStoryId] = useState<string | null>(null);
   const headingRef = useRef<HTMLHeadingElement | null>(null);
 
   const clearTreeStoryRuntimeState = () => {
@@ -134,7 +132,6 @@ export function TreeStoryFlowPanel() {
       setNewTreePlacementMessage(null);
       void showTreeAddedSuccessPopup(
         mapView,
-        createdTree.id,
         createdTree.latitude,
         createdTree.longitude,
       );
@@ -160,7 +157,7 @@ export function TreeStoryFlowPanel() {
     setStorySubmitError(null);
     setStorySubmitting(true);
     try {
-      const createdStory = await createStory({
+      await createStory({
         mapView,
         treeId: selectedTreeId,
         title: values.title,
@@ -169,7 +166,6 @@ export function TreeStoryFlowPanel() {
         email: values.email || undefined,
         imageFiles: values.imageFiles,
       });
-      setSubmittedStoryId(createdStory.id);
       setStep("success");
     } catch (cause) {
       const message = cause instanceof Error ? cause.message : "Failed to add story.";
@@ -187,7 +183,6 @@ export function TreeStoryFlowPanel() {
     setSearchError(null);
     setTreeSubmitError(null);
     setStorySubmitError(null);
-    setSubmittedStoryId(null);
     clearTreeStoryRuntimeState();
   };
 
@@ -383,12 +378,7 @@ export function TreeStoryFlowPanel() {
               {treeSelectionMessage}
             </p>
           ) : null}
-          {selectedTreeId ? (
-            <p className="tree-story-flow__location-chip">
-              <span className="muted">Selected tree GlobalID_2</span>
-              <strong>{selectedTreeId}</strong>
-            </p>
-          ) : null}
+          {selectedTreeId ? <p className="tree-story-flow__location-chip">Tree selected.</p> : null}
           <div className="tree-story-flow__actions">
             <button type="button" className="button button--ghost" onClick={goBack}>
               Back
@@ -440,11 +430,6 @@ export function TreeStoryFlowPanel() {
             Add an optional tree image and choose alive/dead status. You can still click the map to
             move the pin.
           </p>
-          {newTreePlacementMessage ? (
-            <p className="muted" role="status" aria-live="polite">
-              {newTreePlacementMessage}
-            </p>
-          ) : null}
           {treeSubmitError ? (
             <p className="error" role="alert">
               {treeSubmitError}
@@ -472,7 +457,6 @@ export function TreeStoryFlowPanel() {
           <p className="muted">Add your story details and submit.</p>
           {selectedTreeId ? (
             <AddStoryForm
-              treeId={selectedTreeId}
               submitting={storySubmitting}
               submitError={storySubmitError}
               onSubmit={handleAddStorySubmit}
@@ -495,7 +479,6 @@ export function TreeStoryFlowPanel() {
           <p className="muted" role="status" aria-live="polite">
             Your tree story was submitted successfully.
           </p>
-          {submittedStoryId ? <p className="muted">Story ID: {submittedStoryId}</p> : null}
           <div className="tree-story-flow__actions">
             <button type="button" className="button" onClick={resetFlow}>
               Add another Tree/Story
