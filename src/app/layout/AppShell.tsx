@@ -161,7 +161,7 @@ export function AppShell({
             <div className="runtime-shell__ribbon-actions">
               <button
                 type="button"
-                className="button button--ghost runtime-shell__panel-toggle"
+                className="button runtime-shell__panel-toggle runtime-shell__panel-toggle--brand"
                 aria-controls="workflow-panel"
                 aria-pressed={activeView === "workflow"}
                 onClick={() => {

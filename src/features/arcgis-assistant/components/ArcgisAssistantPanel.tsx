@@ -31,7 +31,10 @@ type AssistantChartElement = HTMLElement & {
   skipChartCreationQueue?: boolean;
   componentOnReady?: () => Promise<unknown>;
   loadModel?: () => Promise<void>;
-  refresh?: (props?: { updateData?: boolean; resetAxesBounds?: boolean }) => Promise<void>;
+  refresh?: (props?: {
+    updateData?: boolean;
+    resetAxesBounds?: boolean;
+  }) => Promise<void>;
 };
 
 type AssistantChartSuggestion = {
@@ -63,6 +66,8 @@ type AssistantElementBridge = {
 const CHART_NO_MATCH_RESPONSE =
   "I couldn't find a confident configured chart match for that request.";
 const CHART_BIND_MAX_ATTEMPTS = 3;
+const BRIDGE_LOGGING_ENABLED =
+  import.meta.env.VITE_BRIDGE_LOGGING_ENABLED === "true";
 
 function getDetailMessage(detail: unknown, fallbackMessage: string): string {
   if (typeof detail === "string" && detail.trim().length > 0) {
@@ -85,7 +90,8 @@ function hasExistingChartBlock(
   }
 
   return blocks.some((block) => {
-    const blockType = typeof block.type === "string" ? block.type.toLowerCase() : "";
+    const blockType =
+      typeof block.type === "string" ? block.type.toLowerCase() : "";
     if (blockType === "arcgis-chart" || blockType === "chart") {
       return true;
     }
@@ -99,7 +105,9 @@ function hasExistingChartBlock(
   });
 }
 
-function suppressChartNoMatchResponse(content: string | undefined): string | undefined {
+function suppressChartNoMatchResponse(
+  content: string | undefined,
+): string | undefined {
   if (!content) {
     return content;
   }
@@ -174,7 +182,14 @@ function ArcgisChartRenderer({
       setCardError(null);
       setRenderMode("layer");
     },
-    [canFallbackToLayer, chartIndex, layerItemId, onBridgeLog, renderMode, slotName],
+    [
+      canFallbackToLayer,
+      chartIndex,
+      layerItemId,
+      onBridgeLog,
+      renderMode,
+      slotName,
+    ],
   );
 
   useEffect(() => {
@@ -456,13 +471,19 @@ function ArcgisChartRenderer({
             onarcgisChartNotFoundWarning={(event) => {
               onBridgeLog("chart:not-found-warning", event.detail);
               setCardError(
-                getDetailMessage(event.detail, "Configured chart could not be found."),
+                getDetailMessage(
+                  event.detail,
+                  "Configured chart could not be found.",
+                ),
               );
             }}
             onarcgisRuntimeError={(event) => {
               onBridgeLog("chart:runtime-error", event.detail);
               setCardError(
-                getDetailMessage(event.detail, "A chart runtime error occurred."),
+                getDetailMessage(
+                  event.detail,
+                  "A chart runtime error occurred.",
+                ),
               );
             }}
             onarcgisInvalidConfigWarningRaise={(event) => {
@@ -479,7 +500,10 @@ function ArcgisChartRenderer({
             onarcgisDataProcessError={(event) => {
               onBridgeLog("chart:data-process-error", event.detail);
               setCardError(
-                getDetailMessage(event.detail, "Chart data could not be processed."),
+                getDetailMessage(
+                  event.detail,
+                  "Chart data could not be processed.",
+                ),
               );
             }}
             onarcgisUpdateComplete={(event) => {
@@ -500,7 +524,9 @@ function ArcgisChartRenderer({
           />
         )}
       </div>
-      {cardError ? <p className="arcgis-assistant__chart-error">{cardError}</p> : null}
+      {cardError ? (
+        <p className="arcgis-assistant__chart-error">{cardError}</p>
+      ) : null}
     </section>
   );
 }
@@ -509,7 +535,9 @@ export function ArcgisAssistantPanel() {
   const { mapView, webMap, status } = useMapRuntime();
   const { colorMode } = useTheme();
   const assistantElementRef = useRef<HTMLElement | null>(null);
-  const pendingDirectChartsRef = useRef<AssistantChartSuggestion[] | null>(null);
+  const pendingDirectChartsRef = useRef<AssistantChartSuggestion[] | null>(
+    null,
+  );
   const [chartDetails, setChartDetails] = useState<FeatureLayerChartDetail[]>(
     [],
   );
@@ -527,14 +555,21 @@ export function ArcgisAssistantPanel() {
   const [bridgeLogs, setBridgeLogs] = useState<string[]>([]);
   const lastBridgeLogRef = useRef<{ key: string; at: number } | null>(null);
   const activeWebMapId =
-    typeof webMap?.portalItem?.id === "string" && webMap.portalItem.id.trim().length > 0
+    typeof webMap?.portalItem?.id === "string" &&
+    webMap.portalItem.id.trim().length > 0
       ? webMap.portalItem.id
       : null;
 
   const appendBridgeLog = useCallback((message: string, payload?: unknown) => {
+    if (!BRIDGE_LOGGING_ENABLED) {
+      return;
+    }
     if (
       message === "slot:request" ||
-      message === "slot:ignored-no-chart-payload"
+      message === "slot:ignored-no-chart-payload" ||
+      message === "chart:update-complete" ||
+      message === "chart:no-render-prop-change" ||
+      message === "chart:data-process-complete"
     ) {
       return;
     }
@@ -550,7 +585,7 @@ export function ArcgisAssistantPanel() {
     lastBridgeLogRef.current = { key: logKey, at: now };
     const line = `${stamp} ${message}${payloadText}`;
     console.log("[assistant-bridge]", message, payload ?? "");
-    setBridgeLogs((current) => [...current.slice(-79), line]);
+    setBridgeLogs((current) => [...current.slice(-39), line]);
   }, []);
 
   const chartCatalogContext = useMemo(
@@ -688,15 +723,10 @@ export function ArcgisAssistantPanel() {
         heading="Assistant"
         description="Map help + charts."
         entryMessage="Ask for map help or charts."
-        suggestedPrompts={[
-          "Show a chart for tree layers.",
-          "Show all configured insights.",
-          "Render chart 2 for trees with stories.",
-          "Go to Fresno, then show a chart.",
-        ]}
+        suggestedPrompts={["Show all configured insights.", "Go to ESRI"]}
         keepSuggestedPrompts={true}
         copyEnabled={true}
-        logEnabled={import.meta.env.DEV}
+        logEnabled={BRIDGE_LOGGING_ENABLED}
         onarcgisSubmit={(event: { detail: string }) => {
           const suggestions = getDirectChartSuggestions(event.detail);
           pendingDirectChartsRef.current =
@@ -713,7 +743,8 @@ export function ArcgisAssistantPanel() {
           }
 
           const assistantNode = assistantElementRef.current;
-          const messages = (assistantNode as AssistantElementBridge | null)?.messages;
+          const messages = (assistantNode as AssistantElementBridge | null)
+            ?.messages;
           if (!messages) {
             return;
           }
@@ -732,7 +763,9 @@ export function ArcgisAssistantPanel() {
           const currentMessage = messageList[messageIndex];
           const existingBlocks = currentMessage.blocks ?? [];
           const existingChartBlock = hasExistingChartBlock(existingBlocks);
-          const nextContent = suppressChartNoMatchResponse(currentMessage.content);
+          const nextContent = suppressChartNoMatchResponse(
+            currentMessage.content,
+          );
           const nextBlocks = existingChartBlock
             ? existingBlocks
             : [
@@ -749,7 +782,10 @@ export function ArcgisAssistantPanel() {
                 })),
               ];
 
-          if (nextContent === currentMessage.content && nextBlocks === existingBlocks) {
+          if (
+            nextContent === currentMessage.content &&
+            nextBlocks === existingBlocks
+          ) {
             pendingDirectChartsRef.current = null;
             return;
           }
@@ -761,7 +797,9 @@ export function ArcgisAssistantPanel() {
           });
           pendingDirectChartsRef.current = null;
           appendBridgeLog(
-            existingChartBlock ? "direct-chart:response-suppressed" : "direct-chart:injected",
+            existingChartBlock
+              ? "direct-chart:response-suppressed"
+              : "direct-chart:injected",
             {
               messageId: event.detail.id,
               count: pendingSuggestions.length,
@@ -873,25 +911,27 @@ export function ArcgisAssistantPanel() {
           context={chartCatalogContext}
         />
         <arcgis-assistant-data-exploration-agent />
-        <div className="arcgis-assistant__bridge-logs" slot="footer-content">
-          <div className="arcgis-assistant__bridge-logs-header">
-            <strong>Bridge logs</strong>
-            <button
-              type="button"
-              className="button button--ghost arcgis-assistant__bridge-copy"
-              onClick={() => {
-                void copyBridgeLogs();
-              }}
-            >
-              Copy logs
-            </button>
+        {BRIDGE_LOGGING_ENABLED ? (
+          <div className="arcgis-assistant__bridge-logs" slot="footer-content">
+            <div className="arcgis-assistant__bridge-logs-header">
+              <strong>Bridge logs</strong>
+              <button
+                type="button"
+                className="button button--ghost arcgis-assistant__bridge-copy"
+                onClick={() => {
+                  void copyBridgeLogs();
+                }}
+              >
+                Copy logs
+              </button>
+            </div>
+            <ul className="arcgis-assistant__bridge-log-list">
+              {bridgeLogs.map((line, index) => (
+                <li key={`${index}-${line}`}>{line}</li>
+              ))}
+            </ul>
           </div>
-          <ul className="arcgis-assistant__bridge-log-list">
-            {bridgeLogs.map((line) => (
-              <li key={line}>{line}</li>
-            ))}
-          </ul>
-        </div>
+        ) : null}
         {slottedCharts.map((slottedChart) =>
           (() => {
             const matchingCatalogEntry = chartDetails.find(

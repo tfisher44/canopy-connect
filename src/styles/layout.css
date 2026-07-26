@@ -199,6 +199,23 @@
   backdrop-filter: blur(8px);
 }
 
+.runtime-shell__panel-toggle--brand {
+  background: var(--brand-core);
+  border-color: color-mix(in oklab, var(--brand-deep) 68%, #153323);
+  color: #0f2817;
+  box-shadow:
+    0 0.45rem 1.1rem color-mix(in oklab, var(--brand-deep) 28%, rgba(0, 0, 0, 0.35)),
+    0 0 0.55rem color-mix(in oklab, var(--brand-core) 34%, transparent);
+}
+
+.runtime-shell__panel-toggle--brand:hover:not(:disabled) {
+  background: color-mix(in oklab, var(--brand-core) 84%, white 16%);
+  border-color: color-mix(in oklab, var(--brand-deep) 74%, #0e271a);
+  box-shadow:
+    0 0.55rem 1.25rem color-mix(in oklab, var(--brand-deep) 30%, rgba(0, 0, 0, 0.38)),
+    0 0 0.75rem color-mix(in oklab, var(--brand-core) 46%, transparent);
+}
+
 .runtime-shell__ribbon-actions {
   display: inline-flex;
   align-items: center;
