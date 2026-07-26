@@ -60,6 +60,10 @@ export function ThemeProvider({ children }: PropsWithChildren) {
 
   useEffect(() => {
     document.documentElement.setAttribute("data-mode", colorMode);
+    document.documentElement.classList.remove("calcite-mode-light", "calcite-mode-dark");
+    document.documentElement.classList.add(
+      colorMode === "dark" ? "calcite-mode-dark" : "calcite-mode-light",
+    );
     window.localStorage.setItem(COLOR_MODE_STORAGE_KEY, colorMode);
   }, [colorMode]);
 

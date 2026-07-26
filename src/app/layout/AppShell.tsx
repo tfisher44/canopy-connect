@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import type { ReactNode } from "react";
 import {
   AppRibbon,
@@ -21,6 +21,13 @@ function DefaultPanelContent() {
   return <TreeStoryFlowPanel />;
 }
 
+const ArcgisAssistantPanel = lazy(async () => {
+  const module = await import(
+    "../../features/arcgis-assistant/components/ArcgisAssistantPanel"
+  );
+  return { default: module.ArcgisAssistantPanel };
+});
+
 export function AppShell({
   panelContent,
   panelLabel = "Workflow panel",
@@ -36,10 +43,23 @@ export function AppShell({
     setTheme,
     setColorMode,
   } = themeContext;
-  const resolvedPanelContent = panelContent ?? <DefaultPanelContent />;
-  const shellClassName = `runtime-shell ${panelOpen ? "runtime-shell--panel-open" : "runtime-shell--panel-closed"}`;
+  const isDefaultWorkflowPanel = panelContent === undefined;
+  const [panelMode, setPanelMode] = useState<"assistant" | "workflow">(
+    "workflow",
+  );
+  const resolvedPanelOpen = isDefaultWorkflowPanel ? true : panelOpen;
+  const resolvedPanelContent =
+    panelContent ??
+    (panelMode === "assistant" ? (
+      <Suspense fallback={<p className="muted">Loading ArcGIS Assistant…</p>}>
+        <ArcgisAssistantPanel />
+      </Suspense>
+    ) : (
+      <DefaultPanelContent />
+    ));
+  const shellClassName = `runtime-shell ${resolvedPanelOpen ? "runtime-shell--panel-open" : "runtime-shell--panel-closed"}`;
   const contentClassName =
-    `runtime-shell__content ${panelOpen ? "runtime-shell__content--panel-open" : ""}`.trim();
+    `runtime-shell__content ${resolvedPanelOpen ? "runtime-shell__content--panel-open" : ""}`.trim();
 
   return (
     <div className={shellClassName}>
@@ -48,13 +68,29 @@ export function AppShell({
         subtitle="Plant stories, explore your canopy, and celebrate every tree."
         logoSrc="/brand/canopy-logo.png"
         action={
-          <SidebarToggleButton
-            open={panelOpen}
-            controls="workflow-panel"
-            closedLabel="Add a new Tree/Story"
-            openLabel="Explore map"
-            onToggle={() => setPanelOpen((current) => !current)}
-          />
+          isDefaultWorkflowPanel ? (
+            <button
+              type="button"
+              className="button button--ghost runtime-shell__panel-toggle"
+              aria-controls="workflow-panel"
+              aria-pressed={panelMode === "assistant"}
+              onClick={() => {
+                setPanelMode((current) =>
+                  current === "workflow" ? "assistant" : "workflow",
+                );
+              }}
+            >
+              {panelMode === "workflow" ? "Explore map" : "Add a new Tree/Story"}
+            </button>
+          ) : (
+            <SidebarToggleButton
+              open={resolvedPanelOpen}
+              controls="workflow-panel"
+              closedLabel="Open panel"
+              openLabel="Explore map"
+              onToggle={() => setPanelOpen((current) => !current)}
+            />
+          )
         }
       />
       <main className={contentClassName}>
@@ -71,18 +107,27 @@ export function AppShell({
           </div>
           <MapPlaceholder />
         </section>
-        {panelOpen ? (
-          <MatteSidebar id="workflow-panel" label={panelLabel}>
-            <div className="runtime-shell__panel-theme-controls">
-              <ThemeControls
-                colorMode={colorMode}
-                activeTheme={theme}
-                themeOptions={options}
-                colorModeOptions={colorModeOptions}
-                onThemeChange={setTheme}
-                onColorModeChange={setColorMode}
-              />
-            </div>
+        {resolvedPanelOpen ? (
+          <MatteSidebar
+            id="workflow-panel"
+            label={
+              isDefaultWorkflowPanel && panelMode === "assistant"
+                ? "ArcGIS assistant panel"
+                : panelLabel
+            }
+          >
+            {panelMode === "workflow" ? (
+              <div className="runtime-shell__panel-theme-controls">
+                <ThemeControls
+                  colorMode={colorMode}
+                  activeTheme={theme}
+                  themeOptions={options}
+                  colorModeOptions={colorModeOptions}
+                  onThemeChange={setTheme}
+                  onColorModeChange={setColorMode}
+                />
+              </div>
+            ) : null}
             {resolvedPanelContent}
           </MatteSidebar>
         ) : null}
