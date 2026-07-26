@@ -30,7 +30,7 @@ function getHeading(step: TreeStoryFlowStep): string {
     case "story-form":
       return "Add your tree story";
     case "success":
-      return "Flow ready";
+      return "Story submitted";
   }
 }
 
@@ -81,6 +81,10 @@ export function TreeStoryFlowPanel() {
   const [searchResults, setSearchResults] = useState<LocationSearchResult[]>([]);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [isSearching, setIsSearching] = useState(false);
+  const [manualLatitude, setManualLatitude] = useState("");
+  const [manualLongitude, setManualLongitude] = useState("");
+  const [manualCoordinateError, setManualCoordinateError] = useState<string | null>(null);
+  const [manualCoordinateSubmitting, setManualCoordinateSubmitting] = useState(false);
   const [treeSubmitError, setTreeSubmitError] = useState<string | null>(null);
   const [treeSubmitting, setTreeSubmitting] = useState(false);
   const [storySubmitError, setStorySubmitError] = useState<string | null>(null);
@@ -104,6 +108,70 @@ export function TreeStoryFlowPanel() {
       setSearchError(null);
       setIsSearching(false);
     }
+  };
+
+  const parseLatitudeLongitude = (
+    latitudeInput: string,
+    longitudeInput: string,
+  ): { latitude: number; longitude: number } | null => {
+    const latitude = Number(latitudeInput.trim());
+    const longitude = Number(longitudeInput.trim());
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+      return null;
+    }
+    if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+      return null;
+    }
+
+    return {
+      latitude: Number(latitude.toFixed(6)),
+      longitude: Number(longitude.toFixed(6)),
+    };
+  };
+
+  const handleSetManualCoordinates = () => {
+    const parsedCoordinates = parseLatitudeLongitude(
+      manualLatitude,
+      manualLongitude,
+    );
+
+    if (!parsedCoordinates) {
+      setManualCoordinateError(
+        "Enter a valid latitude (-90 to 90) and longitude (-180 to 180).",
+      );
+      return;
+    }
+
+    setManualCoordinateError(null);
+    setManualCoordinateSubmitting(true);
+    setDraftTreeLocation(parsedCoordinates);
+    setNewTreePlacementMessage(
+      `Tree location set to ${parsedCoordinates.latitude}, ${parsedCoordinates.longitude}.`,
+    );
+
+    if (!mapView) {
+      setManualCoordinateSubmitting(false);
+      return;
+    }
+
+    void mapView
+      .goTo(
+        {
+          center: [parsedCoordinates.longitude, parsedCoordinates.latitude],
+          zoom: 17,
+        },
+        { duration: 650 },
+      )
+      .catch((cause: unknown) => {
+        const message =
+          cause instanceof Error
+            ? cause.message
+            : "Unable to zoom to entered coordinates.";
+        setManualCoordinateError(message);
+      })
+      .finally(() => {
+        setManualCoordinateSubmitting(false);
+      });
   };
 
   const handleAddTreeSubmit = async (values: AddTreeFormValues) => {
@@ -178,6 +246,9 @@ export function TreeStoryFlowPanel() {
     setPath(null);
     setStep("choose-path");
     setLocationQuery("");
+    setManualLatitude("");
+    setManualLongitude("");
+    setManualCoordinateError(null);
     setSearchResults([]);
     setSearchError(null);
     setTreeSubmitError(null);
@@ -287,6 +358,7 @@ export function TreeStoryFlowPanel() {
     setSearchResults([]);
     setIsSearching(false);
     setSearchError(null);
+    setManualCoordinateError(null);
     void zoomToLocation(result).catch((cause: unknown) => {
       const message = cause instanceof Error ? cause.message : "Unable to zoom to that location.";
       setSearchError(message);
@@ -396,6 +468,56 @@ export function TreeStoryFlowPanel() {
       {step === "new-tree-location" ? (
         <section className="stack" aria-label="New tree location flow step">
           <p className="muted">{locationStepHint}</p>
+          <div className="stack">
+            <p className="muted">Or enter exact coordinates:</p>
+            <div className="field">
+              <label htmlFor="manual-latitude">Latitude</label>
+              <input
+                id="manual-latitude"
+                className="tree-story-flow__search-input"
+                type="text"
+                inputMode="decimal"
+                placeholder="e.g. 37.7749"
+                value={manualLatitude}
+                onChange={(event) => {
+                  setManualLatitude(event.target.value);
+                  setManualCoordinateError(null);
+                }}
+                disabled={!mapReady || manualCoordinateSubmitting}
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="manual-longitude">Longitude</label>
+              <input
+                id="manual-longitude"
+                className="tree-story-flow__search-input"
+                type="text"
+                inputMode="decimal"
+                placeholder="e.g. -122.4194"
+                value={manualLongitude}
+                onChange={(event) => {
+                  setManualLongitude(event.target.value);
+                  setManualCoordinateError(null);
+                }}
+                disabled={!mapReady || manualCoordinateSubmitting}
+              />
+            </div>
+            <div className="tree-story-flow__actions">
+              <button
+                type="button"
+                className="button button--ghost"
+                onClick={handleSetManualCoordinates}
+                disabled={!mapReady || manualCoordinateSubmitting}
+              >
+                {manualCoordinateSubmitting ? "Setting coordinates..." : "Set coordinates"}
+              </button>
+            </div>
+            {manualCoordinateError ? (
+              <p className="error" role="alert">
+                {manualCoordinateError}
+              </p>
+            ) : null}
+          </div>
           {newTreePlacementMessage ? (
             <p className="muted" role="status" aria-live="polite">
               {newTreePlacementMessage}
