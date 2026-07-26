@@ -24,8 +24,8 @@
   }
 
   .app-ribbon__logo {
-    max-height: 4.4rem;
-    max-width: min(23rem, 82vw);
+    width: clamp(2.2rem, 9vw, 3.2rem);
+    max-height: 3.2rem;
   }
 
   .app-ribbon__subtitle {
@@ -33,7 +33,7 @@
     text-align: center;
   }
 
-  .app-ribbon__subtitle--under-logo {
+  .app-ribbon__subtitle--with-logo {
     text-align: center;
   }
 
@@ -56,7 +56,7 @@
   }
 
   .app-ribbon__logo {
-    max-height: 4rem;
+    max-height: 3rem;
   }
 
   .runtime-shell__mascot {
