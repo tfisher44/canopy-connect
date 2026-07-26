@@ -23,7 +23,6 @@ export function AddStoryForm({ submitting, submitError, onSubmit }: AddStoryForm
       details: "",
       name: "",
       email: "",
-      imageFiles: [],
     },
   });
   const [detailCount, setDetailCount] = useState(0);
@@ -53,43 +52,6 @@ export function AddStoryForm({ submitting, submitError, onSubmit }: AddStoryForm
         {errors.title ? (
           <p className="error" role="alert">
             {errors.title.message}
-          </p>
-        ) : null}
-      </div>
-
-      <div className="field">
-        <Label.Root htmlFor="story-images">Images</Label.Root>
-        <Controller
-          name="imageFiles"
-          control={control}
-          render={({ field: { onChange, value } }) => {
-            const count = value?.length ?? 0;
-            return (
-              <div className="tree-story-flow__file-picker">
-                <input
-                  id="story-images"
-                  type="file"
-                  multiple
-                  accept="image/jpeg,image/png,image/webp"
-                  className="tree-story-flow__file-input"
-                  onChange={(event) => {
-                    const files = event.currentTarget.files ? Array.from(event.currentTarget.files) : [];
-                    onChange(files);
-                  }}
-                />
-                <label htmlFor="story-images" className="button button--ghost tree-story-flow__file-button">
-                  Choose images
-                </label>
-                <p className="tree-story-flow__file-name" aria-live="polite">
-                  {count > 0 ? `${count} image${count === 1 ? "" : "s"} selected` : "No images selected"}
-                </p>
-              </div>
-            );
-          }}
-        />
-        {errors.imageFiles ? (
-          <p className="error" role="alert">
-            {errors.imageFiles.message}
           </p>
         ) : null}
       </div>

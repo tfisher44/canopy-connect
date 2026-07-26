@@ -164,7 +164,6 @@ export function TreeStoryFlowPanel() {
         details: values.details,
         name: values.name || undefined,
         email: values.email || undefined,
-        imageFiles: values.imageFiles,
       });
       setStep("success");
     } catch (cause) {

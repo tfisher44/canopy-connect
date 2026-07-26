@@ -30,7 +30,6 @@ describe("addStorySchema", () => {
     const result = addStorySchema.safeParse({
       title: "Oak memories",
       details: "This tree has shaded our block for decades.",
-      imageFiles: [new File(["image"], "tree.png", { type: "image/png" })],
       name: "",
       email: "",
     });
@@ -42,7 +41,6 @@ describe("addStorySchema", () => {
     const result = addStorySchema.safeParse({
       title: "Too long",
       details: "x".repeat(2001),
-      imageFiles: [],
       name: "",
       email: "",
     });
@@ -59,7 +57,6 @@ describe("addStorySchema", () => {
     const result = addStorySchema.safeParse({
       title: "Email check",
       details: "Details are valid.",
-      imageFiles: [],
       name: "Alex",
       email: "invalid-email",
     });
