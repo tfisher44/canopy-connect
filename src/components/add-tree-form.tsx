@@ -99,7 +99,7 @@ export function AddTreeForm({ locationLabel, submitting, onSubmit }: AddTreeForm
       </div>
 
       <button type="submit" className="button" disabled={submitting || isSubmitting}>
-        Add tree
+        {submitting || isSubmitting ? "Adding tree..." : "Add tree"}
       </button>
     </form>
   );

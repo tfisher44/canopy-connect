@@ -437,8 +437,67 @@ h3 {
   --calcite-color-border-1: #94a3b8;
 }
 
+.map-placeholder__find-my-trees {
+  margin-top: 0.5rem;
+  min-width: 20rem;
+  max-width: 22rem;
+  display: block;
+  position: relative;
+}
+
+.map-placeholder__find-my-trees .button {
+  display: inline-flex;
+}
+
+.map-placeholder__find-my-trees-panel {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.3rem;
+  padding: 0.55rem;
+  border: 1px solid #94a3b8;
+  border-radius: 0.5rem;
+  background: rgba(255, 255, 255, 0.95);
+  color: #0f172a;
+  position: absolute;
+  left: 0;
+  top: 100%;
+  z-index: 2;
+  width: min(22rem, calc(100vw - 1.5rem));
+}
+
+.map-placeholder__find-my-trees-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.map-placeholder__find-my-trees-input {
+  border: 1px solid #94a3b8;
+  border-radius: 0.4rem;
+  padding: 0.4rem 0.5rem;
+  font: inherit;
+  color: #0f172a;
+  background: #ffffff;
+}
+
+.map-placeholder__find-my-trees-input:focus-visible {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25);
+}
+
+.map-placeholder__find-my-trees-actions {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.map-placeholder__find-my-trees-status {
+  margin: 0;
+  font-size: 0.8rem;
+}
+
 .map-placeholder__layer-list {
-  margin-top: 3.25rem;
+  margin-top: 0;
 }
 
 .map-placeholder__viewport--loading {

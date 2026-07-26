@@ -1,4 +1,4 @@
 allowBuilds:
   '@scarf/scarf': set this to true or false
   '@vaadin/vaadin-usage-statistics': true
-  core-js: set this to true or false
+  core-js: true

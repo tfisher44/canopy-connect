@@ -164,7 +164,6 @@ export function TreeStoryFlowPanel() {
         details: values.details,
         name: values.name || undefined,
         email: values.email || undefined,
-        imageFiles: values.imageFiles,
       });
       setStep("success");
     } catch (cause) {
@@ -429,6 +428,11 @@ export function TreeStoryFlowPanel() {
             Add an optional tree image and choose alive/dead status. You can still click the map to
             move the pin.
           </p>
+          {treeSubmitting ? (
+            <p className="muted" role="status" aria-live="polite">
+              Adding tree and querying map layers. This can take a few seconds.
+            </p>
+          ) : null}
           {treeSubmitError ? (
             <p className="error" role="alert">
               {treeSubmitError}

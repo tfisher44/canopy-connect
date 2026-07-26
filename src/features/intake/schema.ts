@@ -25,7 +25,6 @@ export const addStorySchema = z.object({
     .trim()
     .min(1, "Story details are required.")
     .max(2000, "Story details must be 2000 characters or less."),
-  imageFiles: z.array(imageFileSchema).max(5, "You can upload up to 5 images.").optional(),
   name: z
     .string()
     .trim()
