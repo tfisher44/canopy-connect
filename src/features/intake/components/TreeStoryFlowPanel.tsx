@@ -34,8 +34,31 @@ function getHeading(step: TreeStoryFlowStep): string {
   }
 }
 
+async function showTreeAddedSuccessPopup(
+  mapView: NonNullable<ReturnType<typeof useMapRuntime>["mapView"]>,
+  treeId: string,
+  latitude: number,
+  longitude: number,
+): Promise<void> {
+  if (!mapView.popup) {
+    return;
+  }
+
+  const { default: PointClass } = await import("@arcgis/core/geometry/Point");
+
+  mapView.popup.open({
+    title: "Tree added",
+    content: `Tree ${treeId} was added successfully.`,
+    location: new PointClass({
+      latitude,
+      longitude,
+    }),
+  });
+}
+
 export function TreeStoryFlowPanel() {
   const {
+    mapView,
     status,
     selectedTreeId,
     treeSelectionMessage,
@@ -88,11 +111,16 @@ export function TreeStoryFlowPanel() {
       setTreeSubmitError("Select a tree location on the map before adding a tree.");
       return;
     }
+    if (!mapView) {
+      setTreeSubmitError("Map is not ready yet. Please wait a moment and try again.");
+      return;
+    }
 
     setTreeSubmitError(null);
     setTreeSubmitting(true);
     try {
       const createdTree = await createTree({
+        mapView,
         latitude: draftTreeLocation.latitude,
         longitude: draftTreeLocation.longitude,
         isAlive: values.isAlive,
@@ -102,6 +130,12 @@ export function TreeStoryFlowPanel() {
       setSelectedTreeId(createdTree.id);
       setNewTreePlacementEnabled(false);
       setNewTreePlacementMessage(null);
+      void showTreeAddedSuccessPopup(
+        mapView,
+        createdTree.id,
+        createdTree.latitude,
+        createdTree.longitude,
+      );
       setStep("story-form");
     } catch (cause) {
       const message = cause instanceof Error ? cause.message : "Failed to add tree.";
