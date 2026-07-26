@@ -1,5 +1,6 @@
 import type FeatureLayer from "@arcgis/core/layers/FeatureLayer";
 import type MapView from "@arcgis/core/views/MapView";
+import type { AttachmentEdit, EditOptions } from "@arcgis/core/editing/types";
 import { enrichTreeAttributesFromMap } from "./treeEnrichmentService";
 
 export type CreateTreeInput = {
@@ -18,7 +19,18 @@ export type CreatedTree = {
   canopyValue: string | number | null;
 };
 
-const TREE_LAYER_ID = "835d492568764e579de4ed33fd8c7549";
+const TREE_LAYER_ID = "9424d21bd45345ffbd5a1736941ed88d";
+
+function createGlobalId(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (char) => {
+    const randomValue = Math.floor(Math.random() * 16);
+    const value = char === "x" ? randomValue : (randomValue & 0x3) | 0x8;
+    return value.toString(16);
+  });
+}
 
 function findTreeLayer(mapView: MapView): FeatureLayer {
   const map = mapView.map;
@@ -117,6 +129,56 @@ function toCreatedTree(
   };
 }
 
+function findFieldNameIgnoreCase(
+  layer: FeatureLayer,
+  candidates: string[],
+): string | null {
+  const match = layer.fields.find((field) =>
+    candidates.some((candidate) => field.name.toLowerCase() === candidate.toLowerCase()),
+  );
+  return match?.name ?? null;
+}
+
+function coerceIdValue(value: unknown): string | number | null {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === "string" && value.trim().length > 0) {
+    return value;
+  }
+  return null;
+}
+
+async function resolveTreeGlobalId(
+  featureLayer: FeatureLayer,
+  addResult: { objectId?: number | null; globalId?: string | null },
+): Promise<string | number | null> {
+  const globalIdFieldName = findFieldNameIgnoreCase(featureLayer, ["GlobalID", "globalid"]);
+  if (!globalIdFieldName) {
+    return null;
+  }
+
+  const queryFieldName = featureLayer.objectIdField ?? findFieldNameIgnoreCase(featureLayer, ["OBJECTID"]);
+  if (!queryFieldName || typeof addResult.objectId !== "number") {
+    return null;
+  }
+
+  const query = featureLayer.createQuery();
+  query.where = `${queryFieldName} = ${addResult.objectId}`;
+  query.returnGeometry = false;
+  query.outFields = [globalIdFieldName];
+  query.num = 1;
+
+  const result = await featureLayer.queryFeatures(query);
+  const feature = result.features.at(0);
+  if (!feature || !feature.attributes || typeof feature.attributes !== "object") {
+    return null;
+  }
+
+  const attributes = feature.attributes as Record<string, unknown>;
+  return coerceIdValue(attributes[globalIdFieldName]);
+}
+
 export async function createTree(input: CreateTreeInput): Promise<CreatedTree> {
   const featureLayer = findTreeLayer(input.mapView);
   await featureLayer.load();
@@ -130,7 +192,27 @@ export async function createTree(input: CreateTreeInput): Promise<CreatedTree> {
     import("@arcgis/core/geometry/Point"),
   ]);
 
+  const hasAttachment = input.imageFile instanceof File;
+  const featureGlobalId = createGlobalId();
+  const globalIdFieldName = featureLayer.globalIdField;
+
+  if (hasAttachment && featureLayer.capabilities?.data?.supportsAttachment !== true) {
+    throw new Error(`Layer "${TREE_LAYER_ID}" does not support attachments.`);
+  }
+
+  if (hasAttachment && featureLayer.capabilities?.editing?.supportsGlobalId !== true) {
+    throw new Error(`Layer "${TREE_LAYER_ID}" does not support GlobalID editing required for attachments.`);
+  }
+
+  if (hasAttachment && (!globalIdFieldName || globalIdFieldName.trim().length === 0)) {
+    throw new Error(`Layer "${TREE_LAYER_ID}" is missing a global ID field required for attachments.`);
+  }
+
   const baseAttributes = buildTreeAttributes(input, featureLayer);
+  if (globalIdFieldName && globalIdFieldName.trim().length > 0) {
+    baseAttributes[globalIdFieldName] = featureGlobalId;
+  }
+
   const enrichedAttributes = await enrichTreeAttributesFromMap(
     input.mapView,
     input.latitude,
@@ -147,9 +229,40 @@ export async function createTree(input: CreateTreeInput): Promise<CreatedTree> {
     attributes: enrichedAttributes,
   });
 
-  const editResult = await featureLayer.applyEdits({
+  const edits: {
+    addFeatures: InstanceType<typeof GraphicClass>[];
+    addAttachments?: AttachmentEdit[];
+  } = {
     addFeatures: [addFeatureGraphic],
-  });
+  };
+
+  if (hasAttachment) {
+    const imageFile = input.imageFile;
+    if (!imageFile) {
+      throw new Error("Tree image file was not available for attachment upload.");
+    }
+    edits.addAttachments = [
+      {
+        feature: {
+          globalId: featureGlobalId,
+        },
+        attachment: {
+          globalId: createGlobalId(),
+          name: imageFile.name,
+          contentType: imageFile.type,
+          data: imageFile,
+        },
+      },
+    ];
+  }
+
+  const editOptions: EditOptions | undefined = hasAttachment
+    ? {
+        globalIdUsed: true,
+      }
+    : undefined;
+
+  const editResult = await featureLayer.applyEdits(edits, editOptions);
 
   const addResult = editResult.addFeatureResults.at(0);
   if (!addResult) {
@@ -160,12 +273,34 @@ export async function createTree(input: CreateTreeInput): Promise<CreatedTree> {
     throw new Error(`Add tree failed: ${addResult.error.message ?? "Unknown ArcGIS error."}`);
   }
 
-  const createdId =
-    typeof addResult.objectId === "number"
-      ? addResult.objectId
-      : typeof addResult.globalId === "string" && addResult.globalId.trim().length > 0
+  if (hasAttachment) {
+    const attachmentResult = editResult.addAttachmentResults.at(0);
+    if (!attachmentResult) {
+      throw new Error("Tree was created, but attachment add result was missing.");
+    }
+    if (attachmentResult.error) {
+      throw new Error(
+        `Add tree attachment failed: ${attachmentResult.error.message ?? "Unknown ArcGIS error."}`,
+      );
+    }
+  }
+
+  let createdId: string | number | null = null;
+
+  try {
+    createdId = await resolveTreeGlobalId(featureLayer, addResult);
+  } catch {
+    createdId = null;
+  }
+
+  if (createdId === null) {
+    createdId =
+      typeof addResult.globalId === "string" && addResult.globalId.trim().length > 0
         ? addResult.globalId
-        : null;
+        : typeof addResult.objectId === "number"
+          ? addResult.objectId
+          : null;
+  }
 
   if (createdId === null) {
     throw new Error("Tree layer add result did not include an id.");

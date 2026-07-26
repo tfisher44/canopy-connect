@@ -46,22 +46,22 @@ export const treeEnrichmentConfig: TreeEnrichmentConfig = {
     {
       layerId: "b925374111cc4809b0f4fc47d2c9a07e",
       enabled: true,
-      fieldMappings: [{ targetField: "Canopy" }],
+      fieldMappings: [{ targetField: "CanopyCover" }],
     },
     {
       layerId: "528164b1d64b44d997068efa34482cb9",
       enabled: true,
-      fieldMappings: [{ targetField: "FirePtntl" }],
+      fieldMappings: [{ targetField: "WildfireHazardPotential" }],
     },
     {
       layerId: "e7df45c175314a10acf351d61cec80ce",
       enabled: true,
-      fieldMappings: [{ targetField: "VulnChang" }],
+      fieldMappings: [{ targetField: "VulnerabilityToChange" }],
     },
     {
       layerId: "ae7b7eff1dca4268ba567af17150f5e8",
       enabled: true,
-      fieldMappings: [{ targetField: "InsctDisease" }],
+      fieldMappings: [{ targetField: "PestsAndPathogens" }],
     },
   ],
   strict: false,
