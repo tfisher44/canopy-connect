@@ -113,6 +113,7 @@ const DEFAULT_CENTER = {
   latitude: 37.16611,
   longitude: -119.44944,
 };
+const DEFAULT_WEBMAP_ID = "20712c612e0149c99d32354f089881c4";
 
 function isDraftTreeId(treeId: string): boolean {
   return treeId.startsWith(DRAFT_TREE_ID_PREFIX);
@@ -670,7 +671,11 @@ async function logAttachmentCapabilities(mapView: MapView): Promise<void> {
   });
 }
 
-export function MapPlaceholder() {
+type MapPlaceholderProps = {
+  mapItemId?: string;
+};
+
+export function MapPlaceholder({ mapItemId = DEFAULT_WEBMAP_ID }: MapPlaceholderProps) {
   const {
     error,
     mapView,
@@ -1221,7 +1226,7 @@ export function MapPlaceholder() {
           id="main-map"
           ref={mapElementRef}
           className="map-placeholder__viewport"
-          item-id="20712c612e0149c99d32354f089881c4"
+          item-id={mapItemId}
           autoDestroyDisabled={true}
         >
           <arcgis-search

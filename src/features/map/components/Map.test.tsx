@@ -47,8 +47,20 @@ describe("MapPlaceholder", () => {
 
     const mapElement = screen.getByLabelText("Map viewport").querySelector("arcgis-map");
     expect(mapElement).toBeTruthy();
+    expect(mapElement).toHaveAttribute("item-id", "20712c612e0149c99d32354f089881c4");
     expect(mapElement).not.toHaveAttribute("center");
     expect(mapElement).not.toHaveAttribute("zoom");
+  });
+
+  it("uses the provided webmap item id when configured", () => {
+    const { container } = render(
+      <MapProvider>
+        <MapPlaceholder mapItemId="1843fdd0fd914ca0bf772201e0cc0665" />
+      </MapProvider>,
+    );
+
+    const mapElement = container.querySelector("arcgis-map");
+    expect(mapElement).toHaveAttribute("item-id", "1843fdd0fd914ca0bf772201e0cc0665");
   });
 
   it("preserves draft tree location when map remounts", async () => {

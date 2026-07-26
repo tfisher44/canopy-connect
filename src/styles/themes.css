@@ -116,6 +116,23 @@
     0 0 0.7rem color-mix(in oklab, var(--border-neon-strong) 16%, transparent);
 }
 
+:root[data-mode="light"] .runtime-shell__panel-toggle--brand {
+  background: var(--brand-core);
+  border-color: color-mix(in oklab, var(--brand-deep) 68%, #153323);
+  color: #0f2817;
+  box-shadow:
+    0 0.4rem 0.8rem color-mix(in oklab, var(--brand-deep) 22%, rgba(15, 23, 42, 0.22)),
+    0 0 0.65rem color-mix(in oklab, var(--brand-core) 26%, transparent);
+}
+
+:root[data-mode="light"] .runtime-shell__panel-toggle--brand:hover:not(:disabled) {
+  background: color-mix(in oklab, var(--brand-core) 86%, white 14%);
+  border-color: color-mix(in oklab, var(--brand-deep) 74%, #0e271a);
+  box-shadow:
+    0 0.46rem 0.9rem color-mix(in oklab, var(--brand-deep) 28%, rgba(15, 23, 42, 0.24)),
+    0 0 0.72rem color-mix(in oklab, var(--brand-core) 34%, transparent);
+}
+
 :root[data-mode="light"] .button:focus-visible,
 :root[data-mode="light"] .theme-switcher__select:focus,
 :root[data-mode="light"] .mode-toggle__item:focus-visible {

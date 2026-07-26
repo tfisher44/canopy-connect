@@ -52,7 +52,8 @@ describe("App", () => {
     );
 
     expect(screen.getByRole("heading", { name: "Canopy Connect" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Add a new Tree/Story" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Add new tree/story" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Ask Cleo" })).toBeInTheDocument();
     expect(screen.queryByRole("complementary", { name: "Workflow panel" })).not.toBeInTheDocument();
   });
 

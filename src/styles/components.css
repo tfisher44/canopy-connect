@@ -749,17 +749,19 @@ h3 {
 }
 
 .arcgis-assistant__chart-card {
-  display: grid;
-  gap: 0.5rem;
+  display: flex;
+  flex-direction: column;
   border: 1px solid color-mix(in oklab, var(--border-neon) 30%, var(--border-muted));
   border-radius: 0.65rem;
-  padding: 0.6rem;
+  padding: 0;
   background: color-mix(in oklab, var(--surface-glass) 86%, rgba(8, 18, 36, 0.36));
+  overflow: hidden;
+  height: 100%;
+  min-height: 0;
 }
 
 .arcgis-assistant__chart-card-header {
-  display: grid;
-  gap: 0.1rem;
+  display: none;
 }
 
 .arcgis-assistant__chart-card-header strong {
@@ -773,9 +775,24 @@ h3 {
 
 .arcgis-assistant__chart {
   display: block;
+  flex: 1;
   width: 100%;
-  height: 260px;
-  min-height: 240px;
+  height: 100%;
+  min-height: 0;
+}
+
+.arcgis-assistant__chart-frame {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+.arcgis-assistant__chart-error {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.2;
+  color: var(--danger);
 }
 
 .arcgis-assistant__error,
