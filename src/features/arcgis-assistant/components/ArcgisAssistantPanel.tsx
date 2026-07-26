@@ -62,6 +62,20 @@ type AssistantElementBridge = {
 
 const CHART_NO_MATCH_RESPONSE =
   "I couldn't find a confident configured chart match for that request.";
+const CHART_BIND_MAX_ATTEMPTS = 3;
+
+function getDetailMessage(detail: unknown, fallbackMessage: string): string {
+  if (typeof detail === "string" && detail.trim().length > 0) {
+    return detail;
+  }
+  if (detail && typeof detail === "object" && "message" in detail) {
+    const message = (detail as { message?: unknown }).message;
+    if (typeof message === "string" && message.trim().length > 0) {
+      return message;
+    }
+  }
+  return fallbackMessage;
+}
 
 function hasExistingChartBlock(
   blocks: AssistantResponseMessage["blocks"] | undefined,
@@ -139,6 +153,7 @@ function ArcgisChartRenderer({
 }) {
   const [renderMode, setRenderMode] = useState<"model" | "layer">("model");
   const [didRenderComplete, setDidRenderComplete] = useState(false);
+  const [cardError, setCardError] = useState<string | null>(null);
   const chartElementRef = useRef<AssistantChartElement | null>(null);
   const fallbackLayerSource = fallbackLayer;
   const canFallbackToLayer = Boolean(fallbackLayerSource);
@@ -155,6 +170,8 @@ function ArcgisChartRenderer({
         layerItemId,
         chartIndex,
       });
+      setDidRenderComplete(false);
+      setCardError(null);
       setRenderMode("layer");
     },
     [canFallbackToLayer, chartIndex, layerItemId, onBridgeLog, renderMode, slotName],
@@ -190,6 +207,11 @@ function ArcgisChartRenderer({
         chartIndex,
         renderMode,
       });
+      if (renderMode === "model") {
+        fallbackToLayer("render-timeout");
+      } else {
+        setCardError("Chart is taking longer than expected. Please try again.");
+      }
     }, 8000);
     return () => {
       window.clearTimeout(timer);
@@ -199,6 +221,7 @@ function ArcgisChartRenderer({
     didRenderComplete,
     layerItemId,
     onBridgeLog,
+    fallbackToLayer,
     renderMode,
     slotName,
   ]);
@@ -215,7 +238,32 @@ function ArcgisChartRenderer({
 
     let isCancelled = false;
     const bindChart = async () => {
+      if (typeof chartNode.componentOnReady === "function") {
+        await chartNode.componentOnReady();
+      }
+      if (isCancelled) {
+        return;
+      }
+
       if (renderMode === "model") {
+        if (!canRenderFromModel) {
+          chartNode.setAttribute("layer-item-id", layerItemId);
+          chartNode.setAttribute("chart-index", String(chartIndex));
+          chartNode.layerItemId = layerItemId;
+          chartNode.chartIndex = chartIndex;
+          chartNode.layer = undefined;
+          chartNode.model = undefined;
+          onBridgeLog("chart:direct-bind", {
+            slotName,
+            layerItemId,
+            chartIndex,
+          });
+          if (typeof chartNode.refresh === "function") {
+            await chartNode.refresh({ updateData: true });
+          }
+          return;
+        }
+
         chartNode.removeAttribute("layer-item-id");
         chartNode.removeAttribute("chart-index");
         chartNode.chartIndex = undefined;
@@ -229,12 +277,6 @@ function ArcgisChartRenderer({
           hasFallbackLayer: Boolean(fallbackLayerSource),
           hasFallbackModel: Boolean(fallbackModel),
         });
-        if (typeof chartNode.componentOnReady === "function") {
-          await chartNode.componentOnReady();
-        }
-        if (isCancelled) {
-          return;
-        }
         if (typeof chartNode.loadModel === "function") {
           await chartNode.loadModel();
         }
@@ -247,28 +289,79 @@ function ArcgisChartRenderer({
         return;
       }
 
-      chartNode.removeAttribute("layer-item-id");
-      chartNode.setAttribute("chart-index", String(chartIndex));
-      chartNode.chartIndex = chartIndex;
-      chartNode.layerItemId = undefined;
-      chartNode.layer = fallbackLayerSource;
-      chartNode.model = undefined;
+      if (layerItemId.trim().length > 0) {
+        chartNode.setAttribute("layer-item-id", layerItemId);
+        chartNode.setAttribute("chart-index", String(chartIndex));
+        chartNode.layerItemId = layerItemId;
+        chartNode.chartIndex = chartIndex;
+        chartNode.layer = undefined;
+        chartNode.model = undefined;
+        onBridgeLog("chart:direct-bind-layer-mode", {
+          slotName,
+          layerItemId,
+          chartIndex,
+        });
+      } else if (fallbackLayerSource) {
+        chartNode.removeAttribute("layer-item-id");
+        chartNode.setAttribute("chart-index", String(chartIndex));
+        chartNode.chartIndex = chartIndex;
+        chartNode.layerItemId = undefined;
+        chartNode.layer = fallbackLayerSource;
+        chartNode.model = undefined;
+      } else {
+        throw new Error("No chart binding source available.");
+      }
       if (typeof chartNode.refresh === "function") {
         await chartNode.refresh({ updateData: true });
       }
     };
 
-    void bindChart().catch((cause: unknown) => {
-      const message =
-        cause instanceof Error ? cause.message : "Chart binding failed.";
-      onBridgeLog("chart:bind-error", {
-        slotName,
-        renderMode,
-        chartIndex,
-        message,
-      });
-      fallbackToLayer("bind-error");
-    });
+    const bindWithRetries = async () => {
+      for (let attempt = 1; attempt <= CHART_BIND_MAX_ATTEMPTS; attempt += 1) {
+        try {
+          await bindChart();
+          if (!isCancelled) {
+            setCardError(null);
+          }
+          onBridgeLog("chart:bind-success", {
+            slotName,
+            renderMode,
+            chartIndex,
+            attempt,
+          });
+          return;
+        } catch (cause: unknown) {
+          const message =
+            cause instanceof Error ? cause.message : "Chart binding failed.";
+          onBridgeLog("chart:bind-error", {
+            slotName,
+            renderMode,
+            chartIndex,
+            attempt,
+            message,
+          });
+          if (renderMode === "model" && canFallbackToLayer) {
+            fallbackToLayer("bind-error");
+            return;
+          }
+          if (attempt >= CHART_BIND_MAX_ATTEMPTS) {
+            if (!isCancelled) {
+              setCardError(message);
+            }
+            return;
+          }
+          const backoffMs = attempt * 500;
+          await new Promise<void>((resolve) => {
+            window.setTimeout(() => resolve(), backoffMs);
+          });
+          if (isCancelled) {
+            return;
+          }
+        }
+      }
+    };
+
+    void bindWithRetries();
 
     onBridgeLog("chart:bound-config", {
       slotName,
@@ -289,6 +382,8 @@ function ArcgisChartRenderer({
     fallbackModel,
     layerItemId,
     fallbackToLayer,
+    canFallbackToLayer,
+    canRenderFromModel,
     onBridgeLog,
     renderMode,
     slotName,
@@ -302,98 +397,116 @@ function ArcgisChartRenderer({
           {layerItemId} · chart {chartIndex}
         </span>
       </header>
-      {renderMode === "model" ? (
-        <arcgis-chart
-          key={`${slotName}:model:${layerItemId}:${chartIndex}`}
-          ref={(node) => {
-            chartElementRef.current = node;
-          }}
-          className="arcgis-assistant__chart"
-          autoDestroyDisabled={true}
-          onarcgisChartNotFoundWarning={(event) => {
-            onBridgeLog("chart:not-found-warning", event.detail);
-            fallbackToLayer("chart-not-found-warning");
-          }}
-          onarcgisRuntimeError={(event) => {
-            onBridgeLog("chart:runtime-error", event.detail);
-            fallbackToLayer("runtime-error");
-          }}
-          onarcgisInvalidConfigWarningRaise={(event) => {
-            onBridgeLog("chart:invalid-config", event.detail);
-          }}
-          onarcgisNoRenderPropChange={(event) => {
-            onBridgeLog("chart:no-render-prop-change", event.detail);
-          }}
-          onarcgisDataProcessComplete={(event) => {
-            setDidRenderComplete(true);
-            onBridgeLog("chart:data-process-complete", event.detail);
-          }}
-          onarcgisDataProcessError={(event) => {
-            onBridgeLog("chart:data-process-error", event.detail);
-            fallbackToLayer("data-process-error");
-          }}
-          onarcgisUpdateComplete={(event) => {
-            setDidRenderComplete(true);
-            onBridgeLog("chart:update-complete", event.detail);
-          }}
-          onarcgisRenderingComplete={() => {
-            setDidRenderComplete(true);
-            onBridgeLog("chart:rendering-complete", {
-              layerItemId,
-              chartIndex,
-              slotName,
-              renderMode,
-            });
-          }}
-        />
-      ) : (
-        <arcgis-chart
-          key={`${slotName}:layer:${layerItemId}:${chartIndex}`}
-          ref={(node) => {
-            chartElementRef.current = node;
-          }}
-          className="arcgis-assistant__chart"
-          autoDestroyDisabled={true}
-          onarcgisChartNotFoundWarning={(event) => {
-            onBridgeLog("chart:not-found-warning", event.detail);
-          }}
-          onarcgisRuntimeError={(event) => {
-            onBridgeLog("chart:runtime-error", event.detail);
-          }}
-          onarcgisInvalidConfigWarningRaise={(event) => {
-            onBridgeLog("chart:invalid-config", event.detail);
-          }}
-          onarcgisNoRenderPropChange={(event) => {
-            onBridgeLog("chart:no-render-prop-change", event.detail);
-          }}
-          onarcgisDataProcessComplete={(event) => {
-            setDidRenderComplete(true);
-            onBridgeLog("chart:data-process-complete", event.detail);
-          }}
-          onarcgisDataProcessError={(event) => {
-            onBridgeLog("chart:data-process-error", event.detail);
-          }}
-          onarcgisUpdateComplete={(event) => {
-            setDidRenderComplete(true);
-            onBridgeLog("chart:update-complete", event.detail);
-          }}
-          onarcgisRenderingComplete={() => {
-            setDidRenderComplete(true);
-            onBridgeLog("chart:rendering-complete", {
-              layerItemId,
-              chartIndex,
-              slotName,
-              renderMode,
-            });
-          }}
-        />
-      )}
+      <div className="arcgis-assistant__chart-frame">
+        {renderMode === "model" ? (
+          <arcgis-chart
+            key={`${slotName}:model:${layerItemId}:${chartIndex}`}
+            ref={(node) => {
+              chartElementRef.current = node;
+            }}
+            className="arcgis-assistant__chart"
+            autoDestroyDisabled={true}
+            onarcgisChartNotFoundWarning={(event) => {
+              onBridgeLog("chart:not-found-warning", event.detail);
+              fallbackToLayer("chart-not-found-warning");
+            }}
+            onarcgisRuntimeError={(event) => {
+              onBridgeLog("chart:runtime-error", event.detail);
+              fallbackToLayer("runtime-error");
+            }}
+            onarcgisInvalidConfigWarningRaise={(event) => {
+              onBridgeLog("chart:invalid-config", event.detail);
+            }}
+            onarcgisNoRenderPropChange={(event) => {
+              onBridgeLog("chart:no-render-prop-change", event.detail);
+            }}
+            onarcgisDataProcessComplete={(event) => {
+              setDidRenderComplete(true);
+              setCardError(null);
+              onBridgeLog("chart:data-process-complete", event.detail);
+            }}
+            onarcgisDataProcessError={(event) => {
+              onBridgeLog("chart:data-process-error", event.detail);
+              fallbackToLayer("data-process-error");
+            }}
+            onarcgisUpdateComplete={(event) => {
+              setDidRenderComplete(true);
+              setCardError(null);
+              onBridgeLog("chart:update-complete", event.detail);
+            }}
+            onarcgisRenderingComplete={() => {
+              setDidRenderComplete(true);
+              setCardError(null);
+              onBridgeLog("chart:rendering-complete", {
+                layerItemId,
+                chartIndex,
+                slotName,
+                renderMode,
+              });
+            }}
+          />
+        ) : (
+          <arcgis-chart
+            key={`${slotName}:layer:${layerItemId}:${chartIndex}`}
+            ref={(node) => {
+              chartElementRef.current = node;
+            }}
+            className="arcgis-assistant__chart"
+            autoDestroyDisabled={true}
+            onarcgisChartNotFoundWarning={(event) => {
+              onBridgeLog("chart:not-found-warning", event.detail);
+              setCardError(
+                getDetailMessage(event.detail, "Configured chart could not be found."),
+              );
+            }}
+            onarcgisRuntimeError={(event) => {
+              onBridgeLog("chart:runtime-error", event.detail);
+              setCardError(
+                getDetailMessage(event.detail, "A chart runtime error occurred."),
+              );
+            }}
+            onarcgisInvalidConfigWarningRaise={(event) => {
+              onBridgeLog("chart:invalid-config", event.detail);
+            }}
+            onarcgisNoRenderPropChange={(event) => {
+              onBridgeLog("chart:no-render-prop-change", event.detail);
+            }}
+            onarcgisDataProcessComplete={(event) => {
+              setDidRenderComplete(true);
+              setCardError(null);
+              onBridgeLog("chart:data-process-complete", event.detail);
+            }}
+            onarcgisDataProcessError={(event) => {
+              onBridgeLog("chart:data-process-error", event.detail);
+              setCardError(
+                getDetailMessage(event.detail, "Chart data could not be processed."),
+              );
+            }}
+            onarcgisUpdateComplete={(event) => {
+              setDidRenderComplete(true);
+              setCardError(null);
+              onBridgeLog("chart:update-complete", event.detail);
+            }}
+            onarcgisRenderingComplete={() => {
+              setDidRenderComplete(true);
+              setCardError(null);
+              onBridgeLog("chart:rendering-complete", {
+                layerItemId,
+                chartIndex,
+                slotName,
+                renderMode,
+              });
+            }}
+          />
+        )}
+      </div>
+      {cardError ? <p className="arcgis-assistant__chart-error">{cardError}</p> : null}
     </section>
   );
 }
 
 export function ArcgisAssistantPanel() {
-  const { mapView, status } = useMapRuntime();
+  const { mapView, webMap, status } = useMapRuntime();
   const { colorMode } = useTheme();
   const assistantElementRef = useRef<HTMLElement | null>(null);
   const pendingDirectChartsRef = useRef<AssistantChartSuggestion[] | null>(null);
@@ -413,6 +526,10 @@ export function ArcgisAssistantPanel() {
   >([]);
   const [bridgeLogs, setBridgeLogs] = useState<string[]>([]);
   const lastBridgeLogRef = useRef<{ key: string; at: number } | null>(null);
+  const activeWebMapId =
+    typeof webMap?.portalItem?.id === "string" && webMap.portalItem.id.trim().length > 0
+      ? webMap.portalItem.id
+      : null;
 
   const appendBridgeLog = useCallback((message: string, payload?: unknown) => {
     if (
@@ -459,13 +576,37 @@ export function ArcgisAssistantPanel() {
     }
 
     let isDisposed = false;
-    console.log("[assistant-bridge]", "catalog:initial-load:start");
-    void getFeatureLayerChartDetails(mapView)
+    console.log("[assistant-bridge]", "catalog:initial-load:start", {
+      webMapId: activeWebMapId,
+    });
+    pendingDirectChartsRef.current = null;
+    const loadChartDetailsWithRetry = async () => {
+      for (let attempt = 1; attempt <= CHART_BIND_MAX_ATTEMPTS; attempt += 1) {
+        const nextDetails = await getFeatureLayerChartDetails(mapView);
+        if (nextDetails.length > 0 || attempt >= CHART_BIND_MAX_ATTEMPTS) {
+          return nextDetails;
+        }
+        const waitMs = attempt * 500;
+        appendBridgeLog("catalog:initial-load:retry", {
+          webMapId: activeWebMapId,
+          attempt,
+          waitMs,
+        });
+        await new Promise<void>((resolve) => {
+          window.setTimeout(() => resolve(), waitMs);
+        });
+      }
+      return [];
+    };
+
+    void loadChartDetailsWithRetry()
       .then((nextDetails) => {
         if (!isDisposed) {
           setChartDetails(nextDetails);
           setChartDiscoveryError(null);
+          setSlottedCharts([]);
           appendBridgeLog("catalog:initial-load:done", {
+            webMapId: activeWebMapId,
             layerCount: nextDetails.length,
           });
         }
@@ -479,13 +620,16 @@ export function ArcgisAssistantPanel() {
             ? cause.message
             : "Unable to discover layer charts.";
         setChartDiscoveryError(message);
-        appendBridgeLog("catalog:initial-load:error", { message });
+        appendBridgeLog("catalog:initial-load:error", {
+          webMapId: activeWebMapId,
+          message,
+        });
       });
 
     return () => {
       isDisposed = true;
     };
-  }, [appendBridgeLog, mapView]);
+  }, [activeWebMapId, appendBridgeLog, mapView]);
 
   const copyBridgeLogs = useCallback(async () => {
     if (!navigator.clipboard) {
